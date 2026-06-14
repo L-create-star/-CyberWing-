@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" data-locale="{{ locale }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER AIRCRAFT // 赛博飞行器数据库</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+   CYBERPUNK UI THEME - 赛博朋克风格
+   ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-deep: #0a0a1a;
+            --bg-panel: #0d0d24;
+            --bg-card: #111133;
+            --neon-pink: #ff2d95;
+            --neon-cyan: #00e5ff;
+            --neon-purple: #b347ea;
+            --neon-green: #39ff14;
+            --neon-yellow: #ffe600;
+            --text-dim: #667799;
+            --text-mid: #8899bb;
+            --text-bright: #ccddf6;
+            --border-neon: rgba(0, 229, 255, 0.25);
+            --border-pink: rgba(255, 45, 149, 0.3);
+            --glow-cyan: 0 0 12px rgba(0, 229, 255, 0.4);
+            --glow-pink: 0 0 12px rgba(255, 45, 149, 0.4);
+            --glow-purple: 0 0 14px rgba(179, 71, 234, 0.4);
+            --font-mono: 'Courier New', 'Consolas', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-mid);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ── 动态背景层 ── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            background:
+                /* 网格 */
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.03) 2px, rgba(0, 229, 255, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 229, 255, 0.03) 2px, rgba(0, 229, 255, 0.03) 4px),
+                /* 扫描线 */
+                repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.15) 3px, rgba(0, 0, 0, 0.15) 6px),
+                /* 径向渐变 */
+                radial-gradient(ellipse at 50% 0%, rgba(179, 71, 234, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 229, 255, 0.05) 0%, transparent 50%);
+            animation: bgShift 20s linear infinite;
+        }
+
+        @keyframes bgShift {
+            0% {
+                background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+            }
+
+            100% {
+                background-position: 0 100px, 100px 0, 0 60px, 0 0, 0 0;
+            }
+        }
+
+        /* ── 噪点叠加 ── */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* ── 故障扫描线动画条 ── */
+        .glitch-scan {
+            position: fixed;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-pink), transparent);
+            z-index: 0;
+            pointer-events: none;
+            animation: scanSweep 4s linear infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes scanSweep {
+            0% {
+                top: -5%;
+            }
+
+            100% {
+                top: 105%;
+            }
+        }
+
+        /* ── 顶部导航 ── */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(13, 13, 36, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-neon);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            height: 48px;
+            gap: 8px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.08);
+        }
+
+        #topbar h1 {
+            font-size: 15px;
+            font-family: var(--font-mono);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5), 0 0 30px rgba(0, 229, 255, 0.2);
+            white-space: nowrap;
+            margin-right: 16px;
+            letter-spacing: 2px;
+            animation: neonFlicker 3s infinite;
+        }
+
+        @keyframes neonFlicker {
+
+            0%,
+            19%,
+            21%,
+            23%,
+            25%,
+            54%,
+            56%,
+            100% {
+                opacity: 1;
+            }
+
+            20%,
+            24%,
+            55% {
+                opacity: 0.6;
+            }
+        }
+
+        .tab-btn {
+            padding: 6px 16px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 2px;
+            transition: all .25s;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            position: relative;
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: transparent;
+            transition: all .3s;
+        }
+
+        .tab-btn.active {
+            color: var(--neon-cyan);
+            border-color: var(--border-neon);
+            background: rgba(0, 229, 255, 0.06);
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
+        }
+
+        .tab-btn.active::before {
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-bright);
+            border-color: var(--border-neon);
+        }
+
+        .tab-btn:active {
+            animation: glitchShake 0.3s ease;
+        }
+
+        /* ── 语言切换按钮 ── */
+        .lang-btn {
+            padding: 5px 10px;
+            border: 1px solid var(--border-neon);
+            background: rgba(17, 17, 51, 0.5);
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 11px;
+            border-radius: 2px;
+            transition: all .2s;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+        }
+
+        .lang-btn.active {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.1);
+            text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+        }
+
+        .lang-btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--text-bright);
+        }
+
+        /* ── 主场景画布 ── */
+        #canvas-container {
+            position: fixed;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        /* ── HUD边框 ── */
+        .hud-frame {
+            position: fixed;
+            top: 52px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            z-index: 2;
+            pointer-events: none;
+            border: 1px solid rgba(0, 229, 255, 0.12);
+            box-shadow: inset 0 0 60px rgba(0, 229, 255, 0.04);
+        }
+
+        .hud-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(0, 229, 255, 0.08) 20%, transparent 80%);
+        }
+
+        .hud-frame::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 30%;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(255, 45, 149, 0.06) 20%, transparent 80%);
+        }
+
+        .hud-corner {
+            position: fixed;
+            z-index: 3;
+            pointer-events: none;
+            width: 20px;
+            height: 20px;
+        }
+
+        .hud-corner::before,
+        .hud-corner::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 229, 255, 0.25);
+        }
+
+        .hud-corner.tl {
+            top: 52px;
+            left: 4px;
+        }
+
+        .hud-corner.tr {
+            top: 52px;
+            right: 4px;
+        }
+
+        .hud-corner.bl {
+            bottom: 4px;
+            left: 4px;
+        }
+
+        .hud-corner.br {
+            bottom: 4px;
+            right: 4px;
+        }
+
+        .hud-corner.tl::before,
+        .hud-corner.tl::after,
+        .hud-corner.tr::before,
+        .hud-corner.tr::after {
+            top: 0;
+        }
+
+        .hud-corner.bl::before,
+        .hud-corner.bl::after,
+        .hud-corner.br::before,
+        .hud-corner.br::after {
+            bottom: 0;
+        }
+
+        .hud-corner.tl::before,
+        .hud-corner.bl::before {
+            left: 0;
+            width: 16px;
+            height: 1px;
+        }
+
+        .hud-corner.tl::after,
+        .hud-corner.bl::after {
+            left: 0;
+            width: 1px;
+            height: 16px;
+        }
+
+        .hud-corner.tr::before,
+        .hud-corner.br::before {
+            right: 0;
+            width: 16px;
+            height: 1px;
+        }
+
+        .hud-corner.tr::after,
+        .hud-corner.br::after {
+            right: 0;
+            width: 1px;
+            height: 16px;
+        }
+
+        /* ── 侧边栏 ── */
+        #sidebar {
+            position: fixed;
+            top: 48px;
+            left: 0;
+            bottom: 0;
+            width: 320px;
+            background: rgba(13, 13, 36, 0.94);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border-neon);
+            z-index: 50;
+            transform: translateX(-100%);
+            transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 4px 0 30px rgba(0, 229, 255, 0.06);
+        }
+
+        #sidebar.open {
+            transform: translateX(0);
+        }
+
+        #sidebar-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-neon);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 229, 255, 0.03);
+        }
+
+        #sidebar-header span {
+            font-size: 13px;
+            font-family: var(--font-mono);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 6px rgba(0, 229, 255, 0.3);
+            letter-spacing: 2px;
+        }
+
+        #sidebar-header button {
+            background: none;
+            border: 1px solid var(--border-neon);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            font-size: 14px;
+            width: 28px;
+            height: 28px;
+            border-radius: 2px;
+            transition: all .2s;
+        }
+
+        #sidebar-header button:hover {
+            background: rgba(0, 229, 255, 0.1);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+        }
+
+        #search-box {
+            margin: 10px 12px;
+            padding: 10px 12px;
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid var(--border-neon);
+            border-radius: 2px;
+            color: var(--neon-cyan);
+            font-size: 12px;
+            outline: none;
+            font-family: var(--font-mono);
+            transition: all .2s;
+        }
+
+        #search-box::placeholder {
+            color: var(--text-dim);
+        }
+
+        #search-box:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+        }
+
+        #model-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 8px;
+        }
+
+        .model-card {
+            padding: 12px 14px;
+            margin: 5px 0;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all .2s;
+            border: 1px solid rgba(0, 229, 255, 0.08);
+            background: rgba(17, 17, 51, 0.5);
+            position: relative;
+            overflow: hidden;
+            clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+        }
+
+        .model-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.06), transparent);
+            transition: left .5s;
+        }
+
+        .model-card:hover::before {
+            left: 100%;
+        }
+
+        .model-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.12), inset 0 0 8px rgba(0, 229, 255, 0.04);
+            transform: translateX(2px);
+            animation: glitchCard 0.3s ease;
+        }
+
+        .model-card.selected {
+            border-color: var(--neon-pink);
+            background: rgba(255, 45, 149, 0.08);
+            box-shadow: 0 0 18px rgba(255, 45, 149, 0.15), inset 0 0 12px rgba(255, 45, 149, 0.04);
+        }
+
+        .model-card .name {
+            font-size: 13px;
+            color: var(--text-bright);
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            text-shadow: 0 0 4px rgba(200, 220, 246, 0.3);
+        }
+
+        .model-card.selected .name {
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px rgba(255, 45, 149, 0.4);
+        }
+
+        .model-card .sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 3px;
+            font-family: var(--font-mono);
+        }
+
+        @keyframes glitchCard {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10% {
+                transform: translateX(-3px);
+            }
+
+            30% {
+                transform: translateX(3px);
+            }
+
+            50% {
+                transform: translateX(-2px);
+            }
+
+            70% {
+                transform: translateX(2px);
+            }
+
+            90% {
+                transform: translateX(-1px);
+            }
+        }
+
+        @keyframes glitchShake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10% {
+                transform: translateX(-4px) skewX(-2deg);
+            }
+
+            30% {
+                transform: translateX(4px) skewX(2deg);
+            }
+
+            50% {
+                transform: translateX(-2px);
+            }
+
+            70% {
+                transform: translateX(2px);
+            }
+
+            90% {
+                transform: translateX(-1px);
+            }
+        }
+
+        /* ── 信息面板 ── */
+        #info-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 340px;
+            max-height: 55vh;
+            background: rgba(13, 13, 36, 0.94);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-neon);
+            border-radius: 2px;
+            z-index: 50;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.08), inset 0 0 30px rgba(0, 229, 255, 0.02);
+            font-family: var(--font-mono);
+        }
+
+        #info-panel.open {
+            display: block;
+        }
+
+        #info-panel::before {
+            content: 'TERMINAL // AIRCRAFT_DATA';
+            display: block;
+            font-size: 10px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border-neon);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        #info-panel h3 {
+            font-size: 15px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            animation: neonFlicker 3s infinite;
+        }
+
+        #info-panel .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 11px;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.06);
+        }
+
+        #info-panel .row .label {
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        #info-panel .row .value {
+            color: var(--neon-pink);
+            font-weight: 600;
+            text-shadow: 0 0 6px rgba(255, 45, 149, 0.3);
+        }
+
+        #info-panel .desc {
+            font-size: 11px;
+            color: var(--text-mid);
+            margin-top: 12px;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── 沙盒侧栏 ── */
+        #sandbox-sidebar {
+            position: fixed;
+            top: 48px;
+            right: 0;
+            bottom: 0;
+            width: 360px;
+            background: rgba(13, 13, 36, 0.94);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid var(--border-neon);
+            z-index: 50;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+            box-shadow: -4px 0 30px rgba(0, 229, 255, 0.06);
+        }
+
+        #sandbox-sidebar.open {
+            display: block;
+        }
+
+        #sandbox-sidebar h2 {
+            font-size: 15px;
+            font-family: var(--font-mono);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+            margin-bottom: 18px;
+            letter-spacing: 2px;
+            border-bottom: 1px solid var(--border-neon);
+            padding-bottom: 10px;
+        }
+
+        .slider-group {
+            margin-bottom: 14px;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 5px;
+            font-family: var(--font-mono);
+        }
+
+        .slider-group label span:first-child {
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .slider-group label span:last-child {
+            color: var(--neon-pink);
+            font-weight: 600;
+            text-shadow: 0 0 6px rgba(255, 45, 149, 0.3);
+        }
+
+        .slider-group input[type=range] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(0, 229, 255, 0.15);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider-group input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 229, 255, 0.2);
+            border: 2px solid var(--bg-deep);
+        }
+
+        .shape-btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .shape-btn {
+            flex: 1;
+            min-width: 55px;
+            padding: 9px 6px;
+            border: 1px solid var(--border-neon);
+            background: rgba(17, 17, 51, 0.5);
+            color: var(--text-dim);
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 10px;
+            text-align: center;
+            transition: all .2s;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+        }
+
+        .shape-btn.active {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.1);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+            text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+        }
+
+        .shape-btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--text-bright);
+        }
+
+        .mode-btn-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px 6px;
+            border: 1px solid var(--border-pink);
+            background: rgba(17, 17, 51, 0.5);
+            color: var(--text-dim);
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 10px;
+            text-align: center;
+            transition: all .2s;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+        }
+
+        .mode-btn.active {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            background: rgba(255, 45, 149, 0.1);
+            box-shadow: 0 0 10px rgba(255, 45, 149, 0.15);
+            text-shadow: 0 0 6px rgba(255, 45, 149, 0.4);
+        }
+
+        .mode-btn:hover {
+            border-color: var(--neon-pink);
+            color: var(--text-bright);
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-neon);
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.06);
+            transition: all .25s;
+            margin-bottom: 8px;
+            font-family: var(--font-mono);
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+        }
+
+        .action-btn.launch {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            background: rgba(255, 45, 149, 0.08);
+            text-shadow: 0 0 8px rgba(255, 45, 149, 0.3);
+        }
+
+        .action-btn.launch:hover {
+            background: rgba(255, 45, 149, 0.18);
+            box-shadow: 0 0 20px rgba(255, 45, 149, 0.2), 0 0 40px rgba(255, 45, 149, 0.08);
+        }
+
+        .action-btn.reset {
+            border-color: var(--border-neon);
+        }
+
+        .action-btn:hover {
+            background: rgba(0, 229, 255, 0.12);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.15), 0 0 40px rgba(0, 229, 255, 0.06);
+        }
+
+        .action-btn:active {
+            animation: glitchShake 0.25s ease;
+        }
+
+        #sandbox-result {
+            margin-top: 14px;
+            padding: 14px;
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid var(--border-neon);
+            border-radius: 2px;
+            display: none;
+            font-family: var(--font-mono);
+        }
+
+        #sandbox-result .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 11px;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.05);
+        }
+
+        #sandbox-result .stat .val {
+            color: var(--neon-pink);
+            text-shadow: 0 0 6px rgba(255, 45, 149, 0.3);
+            font-weight: 600;
+        }
+
+        /* ── 浮动按钮 ── */
+        .float-btn {
+            position: fixed;
+            z-index: 60;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(13, 13, 36, 0.9);
+            border: 1px solid var(--border-neon);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+            text-shadow: 0 0 6px rgba(0, 229, 255, 0.3);
+        }
+
+        .float-btn:hover {
+            background: rgba(0, 229, 255, 0.12);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.25), 0 0 40px rgba(0, 229, 255, 0.08);
+        }
+
+        .float-btn:active {
+            animation: glitchShake 0.2s ease;
+        }
+
+        #btn-toggle-sidebar {
+            top: 60px;
+            left: 10px;
+        }
+
+        #btn-toggle-info {
+            bottom: 20px;
+            right: 350px;
+        }
+
+        #btn-toggle-sandbox-sidebar {
+            top: 60px;
+            right: 10px;
+        }
+
+        /* ── 提示文字 ── */
+        #hint {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-dim);
+            font-size: 10px;
+            pointer-events: none;
+            z-index: 40;
+            opacity: .5;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            transition: opacity .3s;
+        }
+
+        /* ── 霓虹涟漪点击效果 ── */
+        .neon-ripple {
+            position: fixed;
+            z-index: 200;
+            pointer-events: none;
+            border-radius: 50%;
+            border: 2px solid var(--neon-cyan);
+            animation: rippleOut .6s ease-out forwards;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+        }
+
+        @keyframes rippleOut {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+
+            100% {
+                width: 100px;
+                height: 100px;
+                opacity: 0;
+                margin-left: -50px;
+                margin-top: -50px;
+            }
+        }
+
+        /* ── 加载动画 (覆盖在canvas上) ── */
+        #loading-overlay {
+            position: fixed;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 45;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 26, 0.85);
+            pointer-events: none;
+            transition: opacity .4s;
+        }
+
+        #loading-overlay.hidden {
+            opacity: 0;
+        }
+
+        #loading-overlay .loader {
+            text-align: center;
+            font-family: var(--font-mono);
+        }
+
+        #loading-overlay .scan-line {
+            width: 200px;
+            height: 2px;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan), 0 0 30px var(--neon-cyan);
+            margin: 0 auto 16px;
+            animation: loadingScan 1.2s ease-in-out infinite;
+        }
+
+        @keyframes loadingScan {
+
+            0%,
+            100% {
+                width: 0;
+                opacity: 0;
+            }
+
+            50% {
+                width: 200px;
+                opacity: 1;
+            }
+        }
+
+        #loading-overlay .loader-text {
+            color: var(--neon-cyan);
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+            animation: loadingBlink 0.8s step-end infinite;
+        }
+
+        @keyframes loadingBlink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* ── 响应式 ── */
+        @media (max-width:768px) {
+            #sidebar {
+                width: 280px;
+            }
+
+            #sandbox-sidebar {
+                width: 300px;
+            }
+
+            #info-panel {
+                width: 280px;
+                right: 10px;
+            }
+
+            #btn-toggle-info {
+                right: 10px;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           FLIGHT RESULT PANEL - 飞行结果面板（赛博朋克右下角）
+           ═══════════════════════════════════════════════════════════ */
+        #flight-result-panel {
+            position: fixed;
+            right: 20px;
+            bottom: 80px;
+            width: 280px;
+            background: linear-gradient(135deg, rgba(13, 13, 36, 0.95), rgba(17, 17, 51, 0.92));
+            border: 1px solid var(--border-neon);
+            border-radius: 4px;
+            padding: 18px 20px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.08), 0 0 60px rgba(0, 0, 0, 0.5);
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+        }
+
+        #flight-result-panel.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        #flight-result-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-pink), transparent);
+            opacity: 0.7;
+        }
+
+        #flight-result-panel .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.12);
+        }
+
+        #flight-result-panel .panel-title {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+
+        #flight-result-panel .panel-close {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 45, 149, 0.08);
+            border: 1px solid var(--border-pink);
+            color: var(--neon-pink);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1;
+            border-radius: 2px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #flight-result-panel .panel-close:hover {
+            background: rgba(255, 45, 149, 0.2);
+            box-shadow: 0 0 10px rgba(255, 45, 149, 0.2);
+        }
+
+        #flight-result-panel .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 7px 0;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        #flight-result-panel .stat-label {
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        #flight-result-panel .stat-value {
+            color: var(--text-bright);
+            font-weight: 700;
+            font-size: 13px;
+            text-shadow: 0 0 4px rgba(0, 229, 255, 0.2);
+        }
+
+        #flight-result-panel .stat-value.highlight {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+            font-size: 16px;
+        }
+
+        #flight-result-panel .score-row {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 45, 149, 0.2);
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--neon-pink);
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(255, 45, 149, 0.5);
+        }
+
+        #flight-result-panel .egg-result {
+            margin-top: 8px;
+            padding: 6px 10px;
+            background: rgba(255, 45, 149, 0.05);
+            border: 1px solid rgba(255, 45, 149, 0.2);
+            border-radius: 2px;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 1px;
+            color: var(--neon-pink);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 故障扫描线 -->
+    <div class="glitch-scan"></div>
+
+    <!-- HUD边框 -->
+    <div class="hud-frame"></div>
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
+
+    <!-- 加载遮罩 -->
+    <div id="loading-overlay">
+        <div class="loader">
+            <div class="scan-line"></div>
+            <div class="loader-text">LOADING...</div>
+        </div>
+    </div>
+
+    <!-- ====== 顶部导航 ====== -->
+    <div id="topbar">
+        <h1>◆ {{ _('CYBER_AIRCRAFT') }}</h1>
+        <button class="tab-btn active" data-tab="gallery" id="tab-gallery">[ {{ _('模型浏览') }} ]</button>
+        <button class="tab-btn" data-tab="sandbox" id="tab-sandbox">[ {{ _('设计沙盒') }} ]</button>
+        <div id="lang-switcher" style="margin-left:auto;display:flex;gap:4px;">
+            <button class="lang-btn active" data-lang="zh" title="{{ _('中文') }}">{{ _('中文') }}</button>
+            <button class="lang-btn" data-lang="en" title="English">EN</button>
+        </div>
+    </div>
+
+    <!-- ====== 3D画布 ====== -->
+    <div id="canvas-container"></div>
+
+    <!-- ====== 侧边栏 ====== -->
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <span>▶ {{ _('AIRCRAFT_DB') }}</span>
+            <button id="sidebar-close" title="{{ _('关闭') }}">✕</button>
+        </div>
+        <input type="text" id="search-box" placeholder="{{ _('> 搜索...') }}">
+        <div id="model-list"></div>
+    </div>
+
+    <!-- ====== 信息面板 ====== -->
+    <div id="info-panel">
+        <h3 id="info-name"></h3>
+        <div id="info-details"></div>
+        <div class="desc" id="info-desc"></div>
+    </div>
+
+    <!-- ====== 沙盒侧栏 ====== -->
+    <div id="sandbox-sidebar">
+        <h2>◆ {{ _('SANDBOX_CONFIG') }}</h2>
+        <div class="slider-group">
+            <label><span>{{ _('> 任务模式') }}</span></label>
+        </div>
+        <div class="mode-btn-group">
+            <button class="mode-btn active" data-mode="distance">{{ _('◆ 最远') }}</button>
+            <button class="mode-btn" data-mode="airtime">{{ _('◆ 滞空') }}</button>
+            <button class="mode-btn" data-mode="eggdrop">{{ _('◆ 投蛋') }}</button>
+        </div>
+        <div class="slider-group">
+            <label><span>{{ _('> 翼尖形状') }}</span></label>
+        </div>
+        <div class="shape-btn-group" id="wingtip-group">
+            <button class="shape-btn active" data-shape="round">{{ _('圆弧') }}</button>
+            <button class="shape-btn" data-shape="square">{{ _('方形') }}</button>
+            <button class="shape-btn" data-shape="swept">{{ _('后掠') }}</button>
+            <button class="shape-btn" data-shape="raked">{{ _('斜削') }}</button>
+        </div>
+        <div class="slider-group">
+            <label><span>{{ _('> 机翼面积') }}</span><span id="val-wing-area">1.0</span></label>
+            <input type="range" id="slider-wing-area" min="0.5" max="2.0" step="0.01" value="1.0">
+        </div>
+        <div class="slider-group">
+            <label><span>{{ _('> 重心位置') }}</span><span id="val-cg">0.5</span></label>
+            <input type="range" id="slider-cg" min="0.2" max="0.8" step="0.01" value="0.5">
+        </div>
+        <div class="slider-group">
+            <label><span>{{ _('> 折叠角度') }}</span><span id="val-fold">0°</span></label>
+            <input type="range" id="slider-fold" min="0" max="60" step="1" value="0">
+        </div>
+        <div class="slider-group">
+            <label><span>{{ _('> 发射角度') }}</span><span id="val-launch-angle">30°</span></label>
+            <input type="range" id="slider-launch-angle" min="5" max="70" step="1" value="30">
+        </div>
+        <div class="slider-group">
+            <label><span>{{ _('> 动力') }}</span><span id="val-launch-power">1.0</span></label>
+            <input type="range" id="slider-launch-power" min="0.3" max="2.5" step="0.01" value="1.0">
+        </div>
+        <div class="slider-group" id="egg-params" style="display:none;">
+            <label><span>{{ _('> 目标距离') }}</span><span id="val-target-dist">15</span></label>
+            <input type="range" id="slider-target-dist" min="5" max="30" step="0.5" value="15">
+        </div>
+        <button class="action-btn launch" id="btn-launch">{{ _('▶ 发射') }}</button>
+        <button class="action-btn reset" id="btn-sandbox-reset">{{ _('↺ 重置') }}</button>
+        <div id="sandbox-result"></div>
+    </div>
+
+    <!-- ====== 浮动按钮 ====== -->
+    <button class="float-btn" id="btn-toggle-sidebar" title="{{ _('模型列表 (B)') }}">◫</button>
+    <button class="float-btn" id="btn-toggle-info" title="{{ _('飞机信息 (I)') }}" style="display:none;">ⓘ</button>
+    <button class="float-btn" id="btn-toggle-sandbox-sidebar" title="{{ _('设计面板') }}" style="display:none;">⚙</button>
+
+    <!-- ====== 飞行结果面板（赛博朋克右下角） ====== -->
+    <div id="flight-result-panel">
+        <div class="panel-header">
+            <span class="panel-title">◆ FLIGHT_RESULT</span>
+            <button class="panel-close" id="btn-hide-flight">✕</button>
+        </div>
+        <div id="flight-stats-content"></div>
+    </div>
+
+    <!-- ====== 操作提示 ====== -->
+    <div id="hint">{{ _('鼠标: 旋转 | 滚轮: 缩放 | 右键: 平移 | B: 列表 | I: 信息 | F/T/R: 视角 | 空格: 发射') }}</div>
+
+    <!-- ====== Three.js Import Map ====== -->
+    <script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // ═══════════════════════════════════════════════════════════
+        // 全局状态
+        // ═══════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════
+        // 多语言 i18n 系统
+        // ═══════════════════════════════════════════════════════════
+        const locale = '{{ locale }}';  // 由 Flask 注入当前语言
+
+        const T = {
+            'gallery': { 'zh': '模型浏览', 'en': 'Gallery' },
+            'sandbox': { 'zh': '设计沙盒', 'en': 'Sandbox' },
+            'aircraft_db': { 'zh': 'AIRCRAFT_DB', 'en': 'AIRCRAFT_DB' },
+            'search': { 'zh': '> 搜索...', 'en': '> SEARCH_...' },
+            'close': { 'zh': '关闭', 'en': 'Close' },
+            'loading': { 'zh': '加载中...', 'en': 'LOADING...' },
+            'sandbox_config': { 'zh': 'SANDBOX_配置', 'en': 'SANDBOX_CONFIG' },
+            'mission_mode': { 'zh': '> 任务模式', 'en': '> MISSION_MODE' },
+            'distance': { 'zh': '◆ 最远', 'en': '◆ Distance' },
+            'airtime': { 'zh': '◆ 滞空', 'en': '◆ Airtime' },
+            'eggdrop': { 'zh': '◆ 投蛋', 'en': '◆ Eggdrop' },
+            'wingtip': { 'zh': '> 翼尖形状', 'en': '> WINGTIP' },
+            'round': { 'zh': '圆弧', 'en': 'Round' },
+            'square': { 'zh': '方形', 'en': 'Square' },
+            'swept': { 'zh': '后掠', 'en': 'Swept' },
+            'raked': { 'zh': '斜削', 'en': 'Raked' },
+            'wing_area': { 'zh': '> 机翼面积', 'en': '> WING_AREA' },
+            'cg_pos': { 'zh': '> 重心位置', 'en': '> CG_POS' },
+            'fold_angle': { 'zh': '> 折叠角度', 'en': '> FOLD_ANGLE' },
+            'launch_angle': { 'zh': '> 发射角度', 'en': '> LAUNCH_ANGLE' },
+            'power': { 'zh': '> 动力', 'en': '> POWER' },
+            'target_dist': { 'zh': '> 目标距离', 'en': '> TARGET_DIST' },
+            'launch': { 'zh': '▶ 发射', 'en': '▶ LAUNCH' },
+            'reset': { 'zh': '↺ 重置', 'en': '↺ RESET' },
+            'result': { 'zh': '▶ 结果', 'en': '▶ RESULT' },
+            'origin': { 'zh': '产地', 'en': 'ORIGIN' },
+            'service': { 'zh': '服役', 'en': 'SERVICE' },
+            'length': { 'zh': '长度', 'en': 'LENGTH' },
+            'wingspan': { 'zh': '翼展', 'en': 'WINGSPAN' },
+            'height': { 'zh': '高度', 'en': 'HEIGHT' },
+            'scale': { 'zh': '比例', 'en': 'SCALE' },
+            'model_size': { 'zh': '模型尺寸', 'en': 'MODEL_SIZE' },
+            'model_list': { 'zh': '模型列表 (B)', 'en': 'Aircraft List (B)' },
+            'aircraft_info': { 'zh': '飞机信息 (I)', 'en': 'Aircraft Info (I)' },
+            'design_panel': { 'zh': '设计面板', 'en': 'Design Panel' },
+            'egg_broken': { 'zh': '✕ 鸡蛋破裂 // 冲击力过大', 'en': '✕ EGG_BROKEN // impact too fast' },
+            'perfect_delivery': { 'zh': '✓ 精准投送 // 命中目标', 'en': '✓ PERFECT_DELIVERY // target hit' },
+            'egg_safe': { 'zh': '△ 鸡蛋安全 // 偏差 %sm', 'en': '△ EGG_SAFE // offset %sm' },
+            'egg_safe_far': { 'zh': '△ 鸡蛋安全 // 偏差 %sm（太远）', 'en': '△ EGG_SAFE // offset %sm (far)' },
+            'score_distance': { 'zh': '分数: %s', 'en': 'SCORE: %s' },
+            'hint_text': {
+                'zh': '鼠标: 旋转 | 滚轮: 缩放 | 右键: 平移 | B: 列表 | I: 信息 | F/T/R: 视角 | 空格: 发射',
+                'en': 'MOUSE: ROTATE | SCROLL: ZOOM | RMB: PAN | B: LIST | I: INFO | F/T/R: VIEW | SPACE: LAUNCH'
+            },
+        };
+
+        function t(key) {
+            if (T[key]) {
+                return T[key][locale] || T[key]['en'] || key;
+            }
+            return key;
+        }
+
+        function tf(key, ...args) {
+            let template = T[key] ? (T[key][locale] || T[key]['en'] || key) : key;
+            args.forEach((arg, i) => { template = template.replace('%s', arg); });
+            return template;
+        }
+
+        // ── 语言切换 ──
+        async function switchLanguage(lang) {
+            if (lang === locale) return;
+            await fetch(`/api/set-language/${lang}`);
+            document.cookie = `lang=${lang};path=/;max-age=31536000`;
+            // 刷新页面应用新语言
+            location.reload();
+        }
+
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
+        });
+
+        // ── 应用初始翻译到静态 HTML ──
+        function applyTranslations() {
+            document.querySelectorAll('.lang-btn').forEach(b => { b.classList.toggle('active', b.dataset.lang === locale); });
+            document.getElementById('tab-gallery').textContent = '[ ' + t('gallery') + ' ]';
+            document.getElementById('tab-sandbox').textContent = '[ ' + t('sandbox') + ' ]';
+            document.getElementById('sidebar-header').querySelector('span').textContent = '▶ ' + t('aircraft_db');
+            document.getElementById('sidebar-close').title = t('close');
+            document.getElementById('search-box').placeholder = t('search');
+            document.getElementById('btn-toggle-sidebar').title = t('model_list');
+            document.getElementById('btn-toggle-info').title = t('aircraft_info');
+            document.getElementById('btn-toggle-sandbox-sidebar').title = t('design_panel');
+
+            // 沙盒面板
+            document.querySelector('#sandbox-sidebar h2').textContent = '◆ ' + t('sandbox_config');
+            const missionLabel = document.querySelector('#sandbox-sidebar .slider-group label span');
+            if (missionLabel) missionLabel.textContent = t('mission_mode');
+
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                const modeMap = { 'distance': t('distance'), 'airtime': t('airtime'), 'eggdrop': t('eggdrop') };
+                b.textContent = modeMap[b.dataset.mode] || b.textContent;
+            });
+
+            const wingtipLabel = document.querySelector('#wingtip-group').previousElementSibling.querySelector('span');
+            if (wingtipLabel) wingtipLabel.textContent = t('wingtip');
+            document.querySelectorAll('#wingtip-group .shape-btn').forEach(b => {
+                const shapeMap = { 'round': t('round'), 'square': t('square'), 'swept': t('swept'), 'raked': t('raked') };
+                b.textContent = shapeMap[b.dataset.shape] || b.textContent;
+            });
+
+            // 滑块标签
+            const labelMap = {
+                'wing-area': t('wing_area'),
+                'cg': t('cg_pos'),
+                'fold': t('fold_angle'),
+                'launch-angle': t('launch_angle'),
+                'launch-power': t('power'),
+                'target-dist': t('target_dist')
+            };
+            Object.entries(labelMap).forEach(([key, val]) => {
+                const sliderLabel = document.getElementById('slider-' + key).previousElementSibling.querySelector('span:first-child');
+                if (sliderLabel) sliderLabel.textContent = val;
+            });
+
+            document.getElementById('btn-launch').textContent = t('launch');
+            document.getElementById('btn-sandbox-reset').textContent = t('reset');
+
+            // 提示
+            const hintEl = document.getElementById('hint');
+            if (hintEl) hintEl.textContent = t('hint_text');
+
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.lang === locale);
+            });
+        }
+
+        // 页面加载完成后应用翻译
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+        // 对于 ES 模块，DOMContentLoaded 可能在模块加载前已触发，双保险：
+        if (document.readyState !== 'loading') applyTranslations();
+
+        const state = {
+            currentTab: 'gallery',
+            models: [],
+            currentModelId: null,
+            currentModelData: null,
+            sandboxMode: 'distance',
+            wingtipShape: 'round',
+            wingArea: 1.0, cgPosition: 0.5, foldAngle: 0,
+            launchAngle: 30, launchPower: 1.0, targetDistance: 15,
+            isLaunching: false, sandboxPlane: null,
+            sandboxPhysics: null, animationId: null,
+        };
+
+        // ═══════════════════════════════════════════════════════════
+        // Three.js 初始化
+        // ═══════════════════════════════════════════════════════════
+        const container = document.getElementById('canvas-container');
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight - 48);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / (window.innerHeight - 48), 0.1, 1000);
+        camera.position.set(8, 5, 12);
+        camera.lookAt(0, 0, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.08;
+        controls.minDistance = 2; controls.maxDistance = 40;
+        controls.target.set(0, 0, 0); controls.update();
+
+        const galleryScene = new THREE.Scene();
+        const sandboxScene = new THREE.Scene();
+        let activeScene = galleryScene;
+
+        // ── 画廊光照 ──
+        function setupGalleryLighting() {
+            galleryScene.add(new THREE.AmbientLight(0xffffff, 2.5));
+            galleryScene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.8));
+            const sun = new THREE.DirectionalLight(0xffffff, 6);
+            sun.position.set(10, 15, 5); sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 100;
+            sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
+            sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
+            galleryScene.add(sun);
+            const f1 = new THREE.DirectionalLight(0x8899cc, 2.5); f1.position.set(-6, 3, -4); galleryScene.add(f1);
+            const f2 = new THREE.DirectionalLight(0xffcc88, 2.0); f2.position.set(0, -1, 8); galleryScene.add(f2);
+            galleryScene.add(new THREE.DirectionalLight(0xaaccff, 3.0).position.set(-4, 8, -6));
+            galleryScene.add(new THREE.GridHelper(20, 20, 0x333842, 0x22252d));
+        }
+        setupGalleryLighting();
+
+        // ── 沙盒场景 ──
+        function setupSandboxEnvironment() {
+            sandboxScene.background = new THREE.Color(0x0a0a1a);
+            sandboxScene.fog = new THREE.Fog(0x0a0a1a, 30, 100);
+            sandboxScene.add(new THREE.AmbientLight(0xffffff, 1.5));
+            const sun = new THREE.DirectionalLight(0x00e5ff, 3);
+            sun.position.set(20, 30, 10); sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 120;
+            sun.shadow.camera.left = -40; sun.shadow.camera.right = 40;
+            sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -5;
+            sandboxScene.add(sun);
+            const gridGeo = new THREE.PlaneGeometry(80, 80);
+            const gridMat = new THREE.MeshStandardMaterial({ color: 0x0d0d24, roughness: 0.95 });
+            const ground = new THREE.Mesh(gridGeo, gridMat); ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.01; ground.receiveShadow = true; sandboxScene.add(ground);
+
+            // 霓虹跑道
+            const runwayGeo = new THREE.PlaneGeometry(1.5, 30);
+            const runwayMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.3, emissive: 0x00e5ff, emissiveIntensity: 0.15 });
+            const runway = new THREE.Mesh(runwayGeo, runwayMat); runway.rotation.x = -Math.PI / 2;
+            runway.position.set(0, 0.005, 0); sandboxScene.add(runway);
+
+            // 距离标记柱
+            for (let d = 5; d <= 40; d += 5) {
+                const markerGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.5, 8);
+                const markerMat = new THREE.MeshStandardMaterial({
+                    color: d === 15 ? 0xff2d95 : 0x00e5ff,
+                    emissive: d === 15 ? 0xff2d95 : 0x00e5ff,
+                    emissiveIntensity: 0.3
+                });
+                const marker = new THREE.Mesh(markerGeo, markerMat);
+                marker.position.set(0, 0.75, -d); marker.castShadow = true; sandboxScene.add(marker);
+                const cvs = document.createElement('canvas'); cvs.width = 64; cvs.height = 32;
+                const ctx = cvs.getContext('2d'); ctx.fillStyle = '#00e5ff'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+                ctx.fillText(d + 'm', 32, 20);
+                const tex = new THREE.CanvasTexture(cvs);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+                sprite.position.set(0.7, 1.4, -d); sprite.scale.set(2, 1, 1); sandboxScene.add(sprite);
+            }
+
+            // 靶心
+            const targetGroup = new THREE.Group(); targetGroup.name = 'target';
+            const ring = new THREE.TorusGeometry(0.8, 0.06, 16, 32);
+            const ringMesh = new THREE.Mesh(ring, new THREE.MeshStandardMaterial({ color: 0xff2d95, emissive: 0xff2d95, emissiveIntensity: 0.5 }));
+            ringMesh.rotation.x = -Math.PI / 2; targetGroup.add(ringMesh);
+            const centerGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const centerMesh = new THREE.Mesh(centerGeo, new THREE.MeshStandardMaterial({ color: 0xff2d95, emissive: 0xff2d95, emissiveIntensity: 0.6 }));
+            centerMesh.position.y = 0.05; targetGroup.add(centerMesh);
+            targetGroup.position.set(0, 0.02, -15); targetGroup.visible = false; sandboxScene.add(targetGroup);
+        }
+        setupSandboxEnvironment();
+
+        // ═══════════════════════════════════════════════════════════
+        // 模型加载
+        // ═══════════════════════════════════════════════════════════
+        const gltfLoader = new GLTFLoader();
+        let galleryModelGroup = null;
+
+        function disposeGroup(group) {
+            group.traverse(c => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+            });
+        }
+
+        function fixModelMaterials(model) {
+            model.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true; child.receiveShadow = true;
+                    if (child.material) {
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+                        materials.forEach(mat => {
+                            let baseColor = new THREE.Color(0x8899aa);
+                            if (mat.color && mat.color.getHex() !== 0xffffff) baseColor.copy(mat.color);
+                            if (mat.map) baseColor.set(0x8899aa);
+                            const newMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
+                            if (Array.isArray(child.material)) {
+                                const idx = child.material.indexOf(mat);
+                                if (idx >= 0) { mat.dispose(); child.material[idx] = newMat; }
+                            } else { child.material.dispose(); child.material = newMat; }
+                        });
+                    }
+                    if (child.geometry) child.geometry.computeVertexNormals();
+                }
+            });
+        }
+
+        function loadGalleryModel(filename) {
+            if (galleryModelGroup) { galleryScene.remove(galleryModelGroup); disposeGroup(galleryModelGroup); galleryModelGroup = null; }
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            const url = `/static/models/${encodeURIComponent(filename)}`;
+            gltfLoader.load(url, (gltf) => {
+                const model = gltf.scene;
+                fixModelMaterials(model);
+                const box = new THREE.Box3().setFromObject(model);
+                const center = new THREE.Vector3(); box.getCenter(center); model.position.sub(center);
+                const size = new THREE.Vector3(); box.getSize(size);
+                const maxDim = Math.max(size.x, size.y, size.z);
+                if (maxDim > 0) model.scale.setScalar(8 / maxDim);
+                galleryModelGroup = model; galleryScene.add(model);
+                controls.target.set(0, 0, 0); camera.position.set(8, 5, 12); camera.lookAt(0, 0, 0); controls.update();
+                document.getElementById('loading-overlay').classList.add('hidden');
+                loadModelDetail(state.currentModelId);
+            }, undefined, (err) => { console.error('加载失败:', err); document.getElementById('loading-overlay').classList.add('hidden'); });
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // 沙盒飞机模型
+        // ═══════════════════════════════════════════════════════════
+        function buildSandboxPlane() {
+            if (state.sandboxPlane) { sandboxScene.remove(state.sandboxPlane); disposeGroup(state.sandboxPlane); }
+            const group = new THREE.Group();
+            const fuseLen = 4, fuseRadius = 0.18;
+            const fuseGeo = new THREE.CylinderGeometry(fuseRadius, fuseRadius * 0.65, fuseLen, 16);
+            const fuseMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.25, metalness: 0.4, emissive: 0x003344, emissiveIntensity: 0.2 });
+            const fuse = new THREE.Mesh(fuseGeo, fuseMat); fuse.castShadow = true; fuse.rotation.x = Math.PI / 2; group.add(fuse);
+            const noseGeo = new THREE.ConeGeometry(fuseRadius, 0.6, 16);
+            const nose = new THREE.Mesh(noseGeo, new THREE.MeshStandardMaterial({ color: 0xff2d95, roughness: 0.2, metalness: 0.5, emissive: 0x330011, emissiveIntensity: 0.2 }));
+            nose.position.z = fuseLen / 2 + 0.3; nose.rotation.x = Math.PI / 2; nose.castShadow = true; group.add(nose);
+
+            const wingSpan = 5 * state.wingArea, wingChord = 1.2 * state.wingArea;
+            const wingSweep = state.wingtipShape === 'swept' ? 0.6 : (state.wingtipShape === 'raked' ? 0.4 : 0);
+            function createWingHalf(side) {
+                const shape = new THREE.Shape();
+                const dir = side === 'right' ? 1 : -1, tipX = wingSpan / 2, tipZ = wingSweep;
+                shape.moveTo(0, 0); shape.lineTo(0, wingChord * 0.5);
+                if (state.wingtipShape === 'round') {
+                    shape.lineTo(tipX - 0.3, tipZ + wingChord * 0.4);
+                    shape.quadraticCurveTo(tipX + 0.1, tipZ + wingChord * 0.15, tipX - 0.1, tipZ);
+                } else if (state.wingtipShape === 'square') {
+                    shape.lineTo(tipX, tipZ + wingChord * 0.4); shape.lineTo(tipX, tipZ + wingChord * 0.1);
+                } else if (state.wingtipShape === 'swept') {
+                    shape.lineTo(tipX - 0.5, tipZ + wingChord * 0.35); shape.lineTo(tipX + 0.3, tipZ - 0.1);
+                } else {
+                    shape.lineTo(tipX - 0.6, tipZ + wingChord * 0.45); shape.lineTo(tipX + 0.5, tipZ - 0.2);
+                }
+                shape.lineTo(0, wingChord * 0.15); shape.closePath();
+                const geo = new THREE.ExtrudeGeometry(shape, { steps: 1, depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 });
+                const mat = new THREE.MeshStandardMaterial({ color: 0x1a1a44, roughness: 0.35, metalness: 0.3, emissive: 0x001122, emissiveIntensity: 0.1, side: THREE.DoubleSide });
+                const wing = new THREE.Mesh(geo, mat); wing.castShadow = true; wing.receiveShadow = true;
+                const cgOff = (state.cgPosition - 0.5) * fuseLen;
+                wing.position.set(dir * 0.12, 0, cgOff);
+                wing.rotation.x = -Math.PI / 2; wing.rotation.z = dir * THREE.MathUtils.degToRad(state.foldAngle);
+                if (side === 'left') { wing.rotation.y = Math.PI; wing.position.x = -dir * 0.12; }
+                return wing;
+            }
+            group.add(createWingHalf('right')); group.add(createWingHalf('left'));
+
+            const tailGeo = new THREE.BoxGeometry(1.6, 0.05, 0.45);
+            const tail = new THREE.Mesh(tailGeo, new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.3, emissive: 0x002233, emissiveIntensity: 0.15 }));
+            tail.position.set(0, 0, -fuseLen / 2 + 0.2); tail.castShadow = true; group.add(tail);
+            const vTailGeo = new THREE.BoxGeometry(0.05, 0.7, 0.45);
+            const vTail = new THREE.Mesh(vTailGeo, new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.3, emissive: 0x002233, emissiveIntensity: 0.15 }));
+            vTail.position.set(0, 0.35, -fuseLen / 2 + 0.2); vTail.castShadow = true; group.add(vTail);
+
+            const gearGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.25, 8);
+            const gearMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.7 });
+            [-0.25, 0.25].forEach(x => { const g = new THREE.Mesh(gearGeo, gearMat); g.position.set(x, -0.32, 0.4); g.castShadow = true; group.add(g); });
+
+            const cgMarkerGeo = new THREE.SphereGeometry(0.1, 8, 8);
+            const cgMarker = new THREE.Mesh(cgMarkerGeo, new THREE.MeshStandardMaterial({ color: 0xff2d95, emissive: 0xff0033, emissiveIntensity: 0.5 }));
+            cgMarker.position.set(0, 0.12, (state.cgPosition - 0.5) * fuseLen); group.add(cgMarker);
+
+            group.position.set(-6, 3, 10); group.rotation.set(0, 0, 0);
+            sandboxScene.add(group); state.sandboxPlane = group;
+            return group;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // 物理模拟
+        // ═══════════════════════════════════════════════════════════
+        function resetSandboxPlane() {
+            if (state.sandboxPlane) { state.sandboxPlane.position.set(-6, 3, 10); state.sandboxPlane.rotation.set(0, 0, 0); state.sandboxPlane.visible = true; }
+            state.isLaunching = false; state.sandboxPhysics = null;
+            document.getElementById('sandbox-result').style.display = 'none';
+            hideFlightPanel();
+            if (state.currentTab === 'sandbox') { camera.position.set(0, 8, 18); controls.target.set(0, 0, 0); controls.update(); }
+            updateTargetVisibility();
+        }
+        function updateTargetVisibility() {
+            const t = sandboxScene.getObjectByName('target');
+            if (t) { t.visible = state.sandboxMode === 'eggdrop'; if (state.sandboxMode === 'eggdrop') t.position.z = -state.targetDistance; }
+        }
+        function launchPlane() {
+            if (state.isLaunching) return;
+            if (!state.sandboxPlane) buildSandboxPlane();
+            state.isLaunching = true;
+            const plane = state.sandboxPlane;
+            plane.position.set(-6, 3, 10); plane.rotation.set(0, 0, 0); plane.visible = true;
+            const angleRad = THREE.MathUtils.degToRad(state.launchAngle);
+            const baseSpeed = 12 * state.launchPower;
+            const launchPos = new THREE.Vector3(-6, 3, 10);
+            const launchTime = performance.now() / 1000;
+            state.sandboxPhysics = {
+                position: launchPos.clone(),
+                velocity: new THREE.Vector3(Math.cos(angleRad) * baseSpeed, Math.sin(angleRad) * baseSpeed, -baseSpeed * 0.3),
+                rotation: new THREE.Euler(0, 0, 0), angularVelocity: new THREE.Vector3(0, 0, 0),
+                launchPosition: launchPos.clone(),
+                launchTime: launchTime,
+                startTime: launchTime, hasLanded: false, eggBroken: false,
+                mass: 0.5, wingArea: state.wingArea * 0.3, cgOffset: state.cgPosition - 0.5,
+                maxHeight: 3, maxDistance: 0,
+            };
+            document.getElementById('sandbox-result').style.display = 'none';
+        }
+        function updatePhysics(dt) {
+            if (!state.isLaunching || !state.sandboxPhysics || !state.sandboxPlane) return;
+            const phys = state.sandboxPhysics; if (phys.hasLanded) return;
+            const delta = Math.min(dt, 0.05);
+            const gravity = new THREE.Vector3(0, -9.81, 0);
+            const speed = phys.velocity.length();
+            const velNorm = phys.velocity.clone().normalize();
+            const rho = 1.225, CL = 0.8 + phys.cgOffset * 2;
+            const liftMag = 0.5 * rho * speed * speed * phys.wingArea * CL;
+            const lift = new THREE.Vector3(0, liftMag / phys.mass, 0);
+            const dragMag = 0.5 * rho * speed * speed * phys.wingArea * 0.15;
+            const drag = velNorm.clone().multiplyScalar(-dragMag / phys.mass);
+            const foldMult = 1 + (state.foldAngle / 60) * 2;
+            const acc = gravity.clone().add(lift).add(drag.multiplyScalar(foldMult));
+            phys.velocity.add(acc.clone().multiplyScalar(delta));
+            phys.angularVelocity.x += -phys.cgOffset * speed * 0.5 * delta;
+            phys.angularVelocity.multiplyScalar(1 - 2 * delta);
+            phys.position.add(phys.velocity.clone().multiplyScalar(delta));
+            phys.rotation.x += phys.angularVelocity.x * delta;
+            phys.rotation.y += phys.angularVelocity.y * delta;
+            phys.rotation.z += phys.angularVelocity.z * delta;
+            state.sandboxPlane.position.copy(phys.position);
+            state.sandboxPlane.rotation.copy(phys.rotation);
+            // 跟踪最高点和最远水平距离
+            if (phys.position.y > phys.maxHeight) phys.maxHeight = phys.position.y;
+            const horizDx = phys.position.x - phys.launchPosition.x;
+            const horizDz = phys.position.z - phys.launchPosition.z;
+            const horizDist = Math.sqrt(horizDx * horizDx + horizDz * horizDz);
+            if (horizDist > phys.maxDistance) phys.maxDistance = horizDist;
+            if (phys.position.y <= 0) {
+                phys.position.y = 0;
+                const landTime = performance.now() / 1000;
+                const airtime = landTime - phys.launchTime;
+                const landingPos = phys.position.clone();
+                landingPos.y = 0;
+                const finalDx = landingPos.x - phys.launchPosition.x;
+                const finalDz = landingPos.z - phys.launchPosition.z;
+                const horizontalDistance = Math.sqrt(finalDx * finalDx + finalDz * finalDz);
+                const impactSpeed = phys.velocity.length();
+                phys.hasLanded = true;
+                state.lastFlightStats = {
+                    launchPosition: phys.launchPosition.clone(),
+                    landingPosition: landingPos.clone(),
+                    launchTime: phys.launchTime,
+                    landTime: landTime,
+                    airtime: airtime,
+                    horizontalDistance: horizontalDistance,
+                    maxHeight: phys.maxHeight,
+                    impactSpeed: impactSpeed,
+                };
+                let eggR = '';
+                if (state.sandboxMode === 'eggdrop') {
+                    const d2t = Math.abs(landingPos.z - (-state.targetDistance) - phys.launchPosition.z);
+                    if (impactSpeed > 8) eggR = '✕ EGG_BROKEN // impact too fast';
+                    else if (d2t < 1.5) eggR = '✓ PERFECT_DELIVERY // target hit';
+                    else if (d2t < 3) eggR = '△ EGG_SAFE // offset ' + d2t.toFixed(1) + 'm';
+                    else eggR = '△ EGG_SAFE // offset ' + d2t.toFixed(1) + 'm (far)';
+                }
+                displayResult(airtime, horizontalDistance, eggR);
+                state.sandboxPlane.position.y = 0.01; state.sandboxPlane.rotation.x = 0; state.sandboxPlane.rotation.z = 0;
+            }
+        }
+        function displayResult(ft, dist, eggR) {
+            const div = document.getElementById('sandbox-result'); div.style.display = 'block';
+            const stats = state.lastFlightStats || {};
+            let h = '<div style="font-weight:600;color:var(--neon-cyan);margin-bottom:6px;">▶ RESULT</div>';
+            h += `<div class="stat"><span>DISTANCE</span><span class="val">${dist.toFixed(2)} m</span></div>`;
+            h += `<div class="stat"><span>AIRTIME</span><span class="val">${ft.toFixed(2)} s</span></div>`;
+            if (stats.impactSpeed !== undefined) {
+                h += `<div class="stat"><span>IMPACT_V</span><span class="val">${stats.impactSpeed.toFixed(1)} m/s</span></div>`;
+            }
+            if (stats.maxHeight !== undefined) {
+                h += `<div class="stat"><span>MAX_HEIGHT</span><span class="val">${stats.maxHeight.toFixed(2)} m</span></div>`;
+            }
+            if (state.sandboxMode === 'distance') h += `<div class="stat" style="color:var(--neon-pink);margin-top:6px;"><b>SCORE: ${dist.toFixed(1)}</b></div>`;
+            else if (state.sandboxMode === 'airtime') h += `<div class="stat" style="color:var(--neon-pink);margin-top:6px;"><b>SCORE: ${(ft * 10).toFixed(1)}</b></div>`;
+            else h += `<div class="stat" style="color:var(--neon-pink);margin-top:6px;"><b>${eggR}</b></div>`;
+            div.innerHTML = h;
+            // 更新右下角赛博朋克面板
+            showFlightPanel(stats, dist, ft, eggR);
+        }
+
+        function showFlightPanel(stats, dist, ft, eggR) {
+            const panel = document.getElementById('flight-result-panel');
+            const content = document.getElementById('flight-stats-content');
+            let html = '';
+            html += `<div class="stat-row"><span class="stat-label">HORIZ_DIST</span><span class="stat-value highlight">${dist.toFixed(2)} m</span></div>`;
+            html += `<div class="stat-row"><span class="stat-label">AIRTIME</span><span class="stat-value highlight">${ft.toFixed(2)} s</span></div>`;
+            if (stats.maxHeight !== undefined) {
+                html += `<div class="stat-row"><span class="stat-label">MAX_HEIGHT</span><span class="stat-value">${stats.maxHeight.toFixed(2)} m</span></div>`;
+            }
+            if (stats.impactSpeed !== undefined) {
+                html += `<div class="stat-row"><span class="stat-label">IMPACT_SPEED</span><span class="stat-value">${stats.impactSpeed.toFixed(1)} m/s</span></div>`;
+            }
+            if (state.sandboxMode === 'distance') {
+                html += `<div class="score-row">◆ SCORE: ${dist.toFixed(1)} ◆</div>`;
+            } else if (state.sandboxMode === 'airtime') {
+                html += `<div class="score-row">◆ SCORE: ${(ft * 10).toFixed(1)} ◆</div>`;
+            } else if (eggR) {
+                html += `<div class="egg-result">${eggR}</div>`;
+            }
+            content.innerHTML = html;
+            panel.classList.add('show');
+        }
+
+        function hideFlightPanel() {
+            document.getElementById('flight-result-panel').classList.remove('show');
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // 赛博朋克UI特效
+        // ═══════════════════════════════════════════════════════════
+
+        // 点击霓虹涟漪
+        document.addEventListener('click', (e) => {
+            const ripple = document.createElement('div');
+            ripple.className = 'neon-ripple';
+            ripple.style.left = e.clientX + 'px';
+            ripple.style.top = e.clientY + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        });
+
+        // 面板打字机效果
+        function typewriterEffect(el, text, speed = 30) {
+            el.textContent = ''; let i = 0;
+            const timer = setInterval(() => {
+                el.textContent += text[i]; i++;
+                if (i >= text.length) clearInterval(timer);
+            }, speed);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // UI事件
+        // ═══════════════════════════════════════════════════════════
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.dataset.tab; state.currentTab = tab;
+                if (tab === 'gallery') {
+                    activeScene = galleryScene;
+                    document.getElementById('sidebar').style.display = '';
+                    document.getElementById('sandbox-sidebar').classList.remove('open');
+                    document.getElementById('btn-toggle-sandbox-sidebar').style.display = 'none';
+                    document.getElementById('btn-toggle-sidebar').style.display = '';
+                    camera.position.set(8, 5, 12); controls.target.set(0, 0, 0); controls.update();
+                } else {
+                    activeScene = sandboxScene;
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebar').style.display = 'none';
+                    document.getElementById('sandbox-sidebar').classList.add('open');
+                    document.getElementById('info-panel').classList.remove('open');
+                    document.getElementById('btn-toggle-info').style.display = 'none';
+                    document.getElementById('btn-toggle-sidebar').style.display = 'none';
+                    document.getElementById('btn-toggle-sandbox-sidebar').style.display = 'none';
+                    camera.position.set(0, 8, 18); controls.target.set(0, 0, 0); controls.update();
+                    if (!state.sandboxPlane) buildSandboxPlane();
+                    updateTargetVisibility();
+                }
+            });
+        });
+
+        document.getElementById('btn-toggle-sidebar').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+        document.getElementById('btn-hide-flight').addEventListener('click', hideFlightPanel);
+        document.getElementById('sidebar-close').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
+        document.getElementById('btn-toggle-info').addEventListener('click', () => document.getElementById('info-panel').classList.toggle('open'));
+
+        async function loadModelList() {
+            const resp = await fetch('/api/models'); state.models = await resp.json(); renderModelList();
+        }
+        function renderModelList(filter = '') {
+            const list = document.getElementById('model-list');
+            const f = filter.toLowerCase();
+            const filtered = state.models.filter(m => m.display_name.toLowerCase().includes(f) || (m.full_name && m.full_name.toLowerCase().includes(f)) || (m.country && m.country.toLowerCase().includes(f)));
+            list.innerHTML = filtered.map(m => `<div class="model-card${m.id === state.currentModelId ? ' selected' : ''}" data-id="${m.id}"><div class="name">${m.display_name}</div><div class="sub">${m.full_name || ''} ${m.country ? '· ' + m.country : ''} ${m.scale_ratio ? '· ' + m.scale_ratio : ''}</div></div>`).join('');
+            document.querySelectorAll('.model-card').forEach(card => { card.addEventListener('click', () => selectModel(parseInt(card.dataset.id))); });
+        }
+        document.getElementById('search-box').addEventListener('input', (e) => renderModelList(e.target.value));
+
+        async function selectModel(id) {
+            state.currentModelId = id;
+            const model = state.models.find(m => m.id === id); if (!model) return;
+            renderModelList(document.getElementById('search-box').value);
+            loadGalleryModel(model.filename);
+            document.getElementById('info-panel').classList.add('open');
+            document.getElementById('btn-toggle-info').style.display = '';
+        }
+        async function loadModelDetail(id) {
+            if (!id) return;
+            const resp = await fetch(`/api/models/${id}`); const data = await resp.json(); state.currentModelData = data;
+            document.getElementById('info-name').textContent = data.full_name || data.display_name;
+            let details = '';
+            if (data.country) details += `<div class="row"><span class="label">ORIGIN</span><span class="value">${data.country}</span></div>`;
+            if (data.service_period) details += `<div class="row"><span class="label">SERVICE</span><span class="value">${data.service_period}</span></div>`;
+            if (data.real_length_m) details += `<div class="row"><span class="label">LENGTH</span><span class="value">${data.real_length_m} m</span></div>`;
+            if (data.real_wingspan_m) details += `<div class="row"><span class="label">WINGSPAN</span><span class="value">${data.real_wingspan_m} m</span></div>`;
+            if (data.real_height_m) details += `<div class="row"><span class="label">HEIGHT</span><span class="value">${data.real_height_m} m</span></div>`;
+            if (data.scale_ratio) details += `<div class="row"><span class="label">SCALE</span><span class="value">${data.scale_ratio}</span></div>`;
+            if (data.model_length) details += `<div class="row"><span class="label">MODEL_SIZE</span><span class="value">${data.model_length.toFixed(2)} x ${data.model_wingspan.toFixed(2)} x ${data.model_height.toFixed(2)}</span></div>`;
+            document.getElementById('info-details').innerHTML = details;
+            const descEl = document.getElementById('info-desc');
+            if (data.usage_desc) typewriterEffect(descEl, data.usage_desc, 15);
+        }
+
+        // ── 沙盒UI ──
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); state.sandboxMode = btn.dataset.mode;
+                document.getElementById('egg-params').style.display = state.sandboxMode === 'eggdrop' ? '' : 'none';
+                updateTargetVisibility(); resetSandboxPlane(); buildSandboxPlane();
+            });
+        });
+        document.querySelectorAll('#wingtip-group .shape-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#wingtip-group .shape-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); state.wingtipShape = btn.dataset.shape; buildSandboxPlane();
+            });
+        });
+        ['wing-area', 'cg', 'fold', 'launch-angle', 'launch-power', 'target-dist'].forEach(param => {
+            const slider = document.getElementById('slider-' + param);
+            const valSpan = document.getElementById('val-' + param);
+            if (!slider || !valSpan) return;
+            slider.addEventListener('input', () => {
+                const val = parseFloat(slider.value);
+                valSpan.textContent = param === 'fold' || param === 'launch-angle' ? val + '°' : val.toFixed(2);
+                const stateKey = param.replace(/-./g, x => x[1].toUpperCase()); state[stateKey] = val;
+                if (['wing-area', 'cg', 'fold'].includes(param)) buildSandboxPlane();
+            });
+        });
+        document.getElementById('btn-launch').addEventListener('click', () => {
+            if (state.isLaunching) { resetSandboxPlane(); buildSandboxPlane(); return; }
+            state.sandboxPhysics = null; launchPlane();
+        });
+        document.getElementById('btn-sandbox-reset').addEventListener('click', () => { resetSandboxPlane(); buildSandboxPlane(); document.getElementById('sandbox-result').style.display = 'none'; });
+
+        // ── 键盘 ──
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (state.currentTab === 'gallery') {
+                if (key === 'b') document.getElementById('sidebar').classList.toggle('open');
+                else if (key === 'i') document.getElementById('info-panel').classList.toggle('open');
+                else if (key === 'f') { camera.position.set(0, 0, 10); controls.target.set(0, 0, 0); controls.update(); }
+                else if (key === 't') { camera.position.set(0, 12, 0.1); controls.target.set(0, 0, 0); controls.update(); }
+                else if (key === 'r') { camera.position.set(10, 0, 0); controls.target.set(0, 0, 0); controls.update(); }
+            }
+            if (key === ' ' && state.currentTab === 'sandbox' && !state.isLaunching) { e.preventDefault(); launchPlane(); }
+        });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight - 48);
+            camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight - 48);
+        });
+
+        // ═══════════════════════════════════════════════════════════
+        // 主循环
+        // ═══════════════════════════════════════════════════════════
+        let lastTime = performance.now();
+        function animate() {
+            state.animationId = requestAnimationFrame(animate);
+            const now = performance.now(); const dt = (now - lastTime) / 1000; lastTime = now;
+            controls.update();
+            if (state.isLaunching && state.sandboxPhysics && !state.sandboxPhysics.hasLanded) updatePhysics(dt);
+            renderer.render(activeScene, camera);
+        }
+        async function init() {
+            await loadModelList();
+            if (state.models.length > 0) { selectModel(state.models[0].id); document.getElementById('sidebar').classList.add('open'); }
+            buildSandboxPlane(); activeScene = galleryScene;
+            animate();
+            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 800);
+        }
+        init();
+        console.log('◆ CYBER_AIRCRAFT // 赛博飞行器数据库 v2.0');
+        console.log('  [画廊] 26架飞机 | [沙盒] 设计+物理模拟');
+        console.log('  KEY: B/I/F/T/R | SPACE:LAUNCH');
+    </script>
+</body>
+
+</html>
