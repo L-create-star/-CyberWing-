@@ -1,0 +1,97 @@
+# English translations for CYBER_AIRCRAFT
+msgid ""
+msgstr ""
+"Project-Id-Version: CYBER_AIRCRAFT 1.0\n"
+"Language: en\n"
+"Language-Team: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "CYBER_AIRCRAFT"
+msgstr "CYBER_AIRCRAFT"
+
+msgid "模型浏览"
+msgstr "Gallery"
+
+msgid "设计沙盒"
+msgstr "Sandbox"
+
+msgid "中文"
+msgstr "中文"
+
+msgid "AIRCRAFT_DB"
+msgstr "AIRCRAFT_DB"
+
+msgid "关闭"
+msgstr "Close"
+
+msgid "> 搜索..."
+msgstr "> SEARCH_..."
+
+msgid "SANDBOX_CONFIG"
+msgstr "SANDBOX_CONFIG"
+
+msgid "> 任务模式"
+msgstr "> MISSION_MODE"
+
+msgid "◆ 最远"
+msgstr "◆ Distance"
+
+msgid "◆ 滞空"
+msgstr "◆ Airtime"
+
+msgid "◆ 投蛋"
+msgstr "◆ Eggdrop"
+
+msgid "> 翼尖形状"
+msgstr "> WINGTIP"
+
+msgid "圆弧"
+msgstr "Round"
+
+msgid "方形"
+msgstr "Square"
+
+msgid "后掠"
+msgstr "Swept"
+
+msgid "斜削"
+msgstr "Raked"
+
+msgid "> 机翼面积"
+msgstr "> WING_AREA"
+
+msgid "> 重心位置"
+msgstr "> CG_POS"
+
+msgid "> 折叠角度"
+msgstr "> FOLD_ANGLE"
+
+msgid "> 发射角度"
+msgstr "> LAUNCH_ANGLE"
+
+msgid "> 动力"
+msgstr "> POWER"
+
+msgid "> 目标距离"
+msgstr "> TARGET_DIST"
+
+msgid "▶ 发射"
+msgstr "▶ LAUNCH"
+
+msgid "↺ 重置"
+msgstr "↺ RESET"
+
+msgid "模型列表 (B)"
+msgstr "Aircraft List (B)"
+
+msgid "飞机信息 (I)"
+msgstr "Aircraft Info (I)"
+
+msgid "设计面板"
+msgstr "Design Panel"
+
+msgid "鼠标: 旋转 | 滚轮: 缩放 | 右键: 平移 | B: 列表 | I: 信息 | F/T/R: 视角 | 空格: 发射"
+msgstr "MOUSE: ROTATE | SCROLL: ZOOM | RMB: PAN | B: LIST | I: INFO | F/T/R: VIEW | SPACE: LAUNCH"
