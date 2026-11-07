@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>王牌机库 · 飞机抽卡</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(255,110,199,.12), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(38,198,218,.12), transparent 60%),
+    linear-gradient(160deg,#0b1026 0%,#131a3a 45%,#0a0f24 100%);
+  color:#e8eaf6;
+  overflow-x:hidden;
+}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;border-radius:50%;background:#fff;opacity:.6;animation:twinkle 3s infinite ease-in-out;}
+@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.9}}
+.wrap{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:26px 20px 70px;}
+
+header{text-align:center;margin-bottom:22px;}
+.logo{
+  font-size:42px;font-weight:900;letter-spacing:3px;
+  background:linear-gradient(90deg,#7dd3fc,#a78bfa,#f0abfc,#7dd3fc);
+  background-size:200% auto;-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  animation:shine 4s linear infinite;
+}
+@keyframes shine{to{background-position:200% center}}
+.sub{color:#94a3b8;margin-top:6px;font-size:14px;letter-spacing:1px;}
+.badge{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 16px;font-size:13px;color:#cbd5e1;margin-top:12px;margin-right:6px;}
+.badge b{color:#fbbf24;}
+.badge.school-badge{border-color:rgba(56,189,248,.55);color:#7dd3fc;}
+.badge.silver-badge{border-color:rgba(203,213,225,.55);color:#cbd5e1;}
+
+/* 稀有度图例 */
+.legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0 4px;}
+.legend .lv{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:#cbd5e1;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  padding:4px 11px;border-radius:999px;
+}
+.legend .dot{width:12px;height:12px;border-radius:50%;}
+.legend .lv.sky .dot{background:linear-gradient(135deg,#7dd3fc,#0369a1);}
+.legend .lv.silver .dot{background:linear-gradient(135deg,#f8fafc,#94a3b8);}
+
+/* 抽卡区 */
+.draw-panel{
+  text-align:center;padding:34px 20px;margin:22px 0;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.1);border-radius:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+  position:relative;overflow:hidden;
+}
+.draw-panel::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 180px at 50% -40%,rgba(123,213,252,.15),transparent 70%);pointer-events:none;}
+.gacha{width:150px;height:150px;margin:6px auto 18px;animation:float 3.5s ease-in-out infinite;}
+.gacha svg{width:100%;height:100%;filter:drop-shadow(0 12px 24px rgba(0,0,0,.5));}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hud{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:18px;font-size:14px;color:#cbd5e1;}
+.hud .stat{background:rgba(255,255,255,.05);padding:8px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.08);}
+.hud .stat b{color:#fbbf24;font-size:16px;margin-left:4px;}
+.btn-draw{
+  position:relative;border:none;cursor:pointer;font-family:inherit;
+  padding:15px 46px;font-size:19px;font-weight:800;letter-spacing:2px;color:#0b1026;
+  background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  border-radius:14px;box-shadow:0 8px 0 #b45309,0 16px 34px rgba(245,158,11,.35);
+  transition:transform .08s,box-shadow .08s;
+}
+.btn-draw:hover{filter:brightness(1.06);}
+.btn-draw:active{transform:translateY(6px);box-shadow:0 2px 0 #b45309,0 6px 20px rgba(245,158,11,.3);}
+.btn-draw:disabled{filter:grayscale(.5);cursor:not-allowed;transform:none;}
+.hint{color:#7c8db0;font-size:13px;margin-top:12px;}
+
+/* 十连结果 */
+.result{margin-top:26px;}
+.result-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.result-title h2{font-size:19px;letter-spacing:1px;}
+.result-title span{color:#7c8db0;font-size:13px;}
+
+.cards{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:14px;
+  perspective:1200px;
+}
+.card{
+  position:relative;height:258px;border-radius:14px;cursor:pointer;
+  transform-style:preserve-3d;opacity:0;transform:rotateY(90deg);
+  animation:reveal .55s cubic-bezier(.2,.8,.3,1.2) forwards;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+}
+@keyframes reveal{to{opacity:1;transform:rotateY(0)}}
+.card .inner{
+  position:absolute;inset:0;border-radius:14px;padding:10px;
+  background:linear-gradient(165deg,var(--c1),var(--c2));
+  border:1.5px solid rgba(255,255,255,.25);
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  overflow:hidden;
+}
+.card .inner::before{content:"";position:absolute;inset:0;background:radial-gradient(120px 80px at 50% -10%,rgba(255,255,255,.25),transparent 70%);pointer-events:none;}
+.card .rlv{
+  position:absolute;top:7px;left:9px;font-size:10px;font-weight:800;letter-spacing:.5px;
+  color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);
+  background:rgba(0,0,0,.3);padding:2px 8px;border-radius:999px;z-index:2;
+}
+.card .yr{position:absolute;top:8px;right:10px;font-size:10px;color:rgba(255,255,255,.7);z-index:2;}
+.card .pic{
+  width:100%;height:104px;margin-top:22px;display:flex;align-items:center;justify-content:center;
+  z-index:1;position:relative;
+}
+.card .pic img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(0,0,0,.45));}
+.card .pic svg{width:92px;height:92px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5));}
+.card .pname{font-size:16px;font-weight:800;letter-spacing:.5px;text-align:center;line-height:1.15;z-index:1;margin-top:8px;}
+.card .pcode{font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;z-index:1;text-align:center;}
+.card .ptag{font-size:9px;margin-top:7px;color:#ffd54f;z-index:1;background:rgba(0,0,0,.28);padding:2px 8px;border-radius:999px;letter-spacing:.5px;}
+.card .schtag{
+  font-size:9px;margin-top:4px;z-index:1;background:linear-gradient(90deg,#ffd700,#ff6ec7);
+  color:#2a1a03;padding:2px 8px;border-radius:999px;letter-spacing:.5px;font-weight:800;
+}
+.card .siltag{
+  font-size:9px;margin-top:4px;z-index:1;background:linear-gradient(90deg,#f8fafc,#94a3b8);
+  color:#0f172a;padding:2px 8px;border-radius:999px;letter-spacing:.5px;font-weight:800;
+}
+
+/* 稀有卡光效 */
+.card.r4 .inner{border-color:rgba(171,71,188,.9);}
+.card.r5 .inner{border-color:rgba(255,167,38,.95);box-shadow:inset 0 0 22px rgba(255,167,38,.35);}
+.card.r5{animation:reveal .55s cubic-bezier(.2,.8,.3,1.2) forwards,rard .6s .4s both;}
+.card.r6 .inner{border-color:rgba(239,83,80,.95);box-shadow:inset 0 0 24px rgba(239,83,80,.4);}
+.card.r6{animation:reveal .55s cubic-bezier(.2,.8,.3,1.2) forwards,rard .6s .4s both;}
+.card.r7 .inner{
+  border:2px solid #ffd700;
+  background:linear-gradient(160deg,#ff6ec7,#7c3aed 45%,#0ea5e9);
+  box-shadow:inset 0 0 26px rgba(255,215,0,.5);
+}
+.card.r7{animation:reveal .55s cubic-bezier(.2,.8,.3,1.2) forwards,rard .6s .4s both;}
+.card.r7 .pname{color:#fff;text-shadow:0 0 12px rgba(255,215,0,.9);}
+.card.r7 .rlv{background:linear-gradient(90deg,#ffd700,#ff6ec7);color:#1a1033;}
+@keyframes rard{0%{box-shadow:0 0 0 0 transparent}100%{box-shadow:0 0 34px 4px var(--glow,var(--c1))}}
+
+/* 天蓝卡（南昌航空大学校机 · 特殊） */
+.card.school .inner{
+  background:linear-gradient(160deg,#7dd3fc,#0ea5e9 50%,#075985);
+  border:2px solid #bae6fd;
+  box-shadow:inset 0 0 24px rgba(186,230,253,.5),0 0 18px rgba(56,189,248,.4);
+}
+.card.school .rlv{background:linear-gradient(90deg,#bae6fd,#38bdf8);color:#082f49;text-shadow:none;}
+.card.school .pname{color:#f0f9ff;text-shadow:0 0 10px rgba(56,189,248,.8);}
+.card.school .pcode{color:rgba(240,253,255,.85);}
+.card.school .ptag{color:#0c4a6e;background:rgba(224,242,254,.8);}
+.card.school .schtag{background:linear-gradient(90deg,#ffd700,#fbbf24);}
+
+/* 隐藏卡 */
+.card.silver .inner{
+  background:linear-gradient(160deg,#f8fafc,#94a3b8 55%,#334155);
+  border-color:#f1f5f9;
+  box-shadow:inset 0 0 24px rgba(248,250,252,.5),0 0 16px rgba(203,213,225,.35);
+}
+.card.silver .rlv{background:linear-gradient(90deg,#f8fafc,#cbd5e1);color:#0f172a;text-shadow:none;}
+.card.silver .pname{color:#f8fafc;text-shadow:0 1px 6px rgba(15,23,42,.8);}
+.card.silver .pcode{color:rgba(248,250,252,.9);}
+.card.silver .ptag{color:#0f172a;background:rgba(248,250,252,.85);}
+.card.silver{animation:reveal .55s cubic-bezier(.2,.8,.3,1.2) forwards,silverGlow .6s .4s both;}
+@keyframes silverGlow{0%{box-shadow:0 0 0 0 transparent}100%{box-shadow:0 0 34px 5px rgba(226,232,240,.6)}}
+
+/* .q（叠层） */
+.card.silver.q .inner{
+  background:linear-gradient(160deg,#0b0b0d,#1c1c22 42%,#2b2415 72%,#0b0b0d);
+  border-color:rgba(247,222,138,.55);
+  box-shadow:inset 0 0 26px rgba(247,222,138,.15),0 0 18px rgba(247,222,138,.3);
+}
+.card.silver.q .rlv{background:linear-gradient(90deg,#f7de8a,#c9a227);color:#141414;text-shadow:none;}
+.card.silver.q .pname{color:#f7de8a;text-shadow:0 1px 8px rgba(0,0,0,.85);}
+.card.silver.q .pcode{color:rgba(247,222,138,.85);}
+.card.silver.q .ptag{color:#141414;background:rgba(247,222,138,.92);}
+.card.silver.q{animation:reveal .55s cubic-bezier(.2,.8,.3,1.2) forwards,qGlow .7s .4s both;}
+@keyframes qGlow{0%{box-shadow:0 0 0 0 transparent}100%{box-shadow:0 0 40px 7px rgba(247,222,138,.55)}}
+
+/* 弹窗 */
+.modal{
+  position:fixed;inset:0;z-index:100;display:none;
+  background:rgba(5,8,20,.72);backdrop-filter:blur(4px);
+}
+.modal.show{display:flex;}
+.modal-box{
+  width:min(560px,92vw);max-height:88vh;overflow:auto;
+  margin:auto;
+  background:linear-gradient(180deg,#1a2147,#101631);
+  border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:24px;
+  position:relative;animation:pop .35s ease;
+}
+@keyframes pop{from{transform:translateY(24px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:#cbd5e1;font-size:22px;cursor:pointer;line-height:1;z-index:3;}
+.modal-close:hover{color:#fff;}
+.m-pic{width:100%;height:230px;border-radius:12px;overflow:hidden;margin-bottom:16px;background:linear-gradient(160deg,#1a2147,#101631);position:relative;display:flex;align-items:center;justify-content:center;}
+.m-pic img{max-width:92%;max-height:100%;object-fit:contain;display:block;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5));}
+.m-pic svg{width:160px;height:160px;margin:20px auto;display:block;opacity:.9;}
+.m-toggle{display:none;gap:10px;margin-bottom:14px;}
+.mt-btn{flex:1;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#cbd5e1;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;letter-spacing:1px;transition:filter .15s;}
+.mt-btn:hover{filter:brightness(1.25);}
+.mt-btn.on{background:linear-gradient(135deg,#7dd3fc,#38bdf8);color:#082f49;border-color:rgba(125,211,252,.7);}
+#mPic.real img{filter:none;max-width:100%;}
+#mPic.real::after{content:"真实照片 · 图片来源于网络";position:absolute;right:10px;bottom:8px;font-size:10px;color:rgba(255,255,255,.72);background:rgba(0,0,0,.5);padding:3px 9px;border-radius:999px;z-index:2;}
+.m-open{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;}
+.m-open h3{font-size:23px;margin-bottom:4px;}
+.m-open .code{color:#94a3b8;font-size:13px;}
+.m-badges{display:flex;gap:8px;margin:10px 0 14px;flex-wrap:wrap;}
+.m-badges .b{font-size:11px;padding:3px 10px;border-radius:999px;font-weight:700;letter-spacing:.5px;}
+.m-badges .b.rlvb{background:rgba(0,0,0,.3);border:1px solid var(--glow);color:var(--glow);}
+.m-badges .b.schb{background:linear-gradient(135deg,#7dd3fc,#0ea5e9);color:#082f49;font-weight:800;}
+.m-badges .b.silb{background:linear-gradient(135deg,#f8fafc,#94a3b8);color:#0f172a;font-weight:800;}
+.m-badges .b.qsilb{background:linear-gradient(135deg,#f7de8a,#c9a227 60%,#8a6d1d);color:#141414;font-weight:800;}
+.m-badges .b.genb{background:rgba(255,255,255,.08);color:#cbd5e1;}
+.m-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.m-meta .mi{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;font-size:13px;}
+.m-meta .mi span{display:block;color:#7c8db0;font-size:11px;margin-bottom:2px;}
+.m-meta .mi b{color:#e8eaf6;}
+.m-desc{color:#cbd5e1;font-size:14px;line-height:1.75;background:rgba(0,0,0,.25);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.06);}
+.m-facts{margin-top:14px;}
+.m-facts h4{font-size:14px;color:#ffd54f;letter-spacing:1px;margin-bottom:10px;}
+.m-facts ul{list-style:none;}
+.m-facts li{
+  position:relative;padding:9px 12px 9px 32px;font-size:13px;color:#cbd5e1;line-height:1.65;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;margin-bottom:8px;
+}
+.m-facts li::before{content:"✦";position:absolute;left:11px;top:9px;color:var(--glow,#7dd3fc);}
+.m-facts li b{color:#e8eaf6;}
+
+/* 图鉴 */
+.collection{margin-top:38px;}
+.sec-title{display:flex;align-items:center;gap:10px;font-size:20px;margin-bottom:6px;flex-wrap:wrap;}
+.sec-title .sub{color:#7c8db0;font-size:12px;font-weight:400;}
+.prog{background:rgba(255,255,255,.06);border-radius:999px;height:10px;margin:12px 0 18px;overflow:hidden;}
+.prog i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7dd3fc,#a78bfa,#f0abfc);transition:width .5s;width:0;}
+.col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px;}
+.col-item{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:11px;
+  padding:9px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;
+}
+.col-item:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2);}
+.col-item .cs{width:100%;height:56px;border-radius:8px;background:linear-gradient(160deg,var(--rc1),var(--rc2));display:flex;align-items:center;justify-content:center;margin-bottom:7px;overflow:hidden;position:relative;}
+.col-item .cs img{width:100%;height:100%;object-fit:contain;padding:3px;}
+.col-item .cs svg{width:48px;height:48px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));}
+.col-item .cn{font-size:12px;font-weight:600;color:#e8eaf6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.col-item .cc{font-size:10px;color:#7c8db0;}
+.col-item .schstar{position:absolute;top:5px;right:7px;font-size:11px;color:#38bdf8;text-shadow:0 0 6px rgba(56,189,248,.9);z-index:2;}
+.col-item .silstar{position:absolute;top:5px;right:7px;font-size:11px;color:#e2e8f0;text-shadow:0 0 6px rgba(226,232,240,.9);z-index:2;}
+.col-item .silstar.qs{color:#f7de8a;text-shadow:0 0 7px rgba(247,222,138,.95);}
+.col-item.locked .cs{filter:grayscale(1);opacity:.15;}
+.col-item.locked .cn{color:#55617e;}
+.col-item.locked{cursor:default;}
+
+footer{text-align:center;color:#7c8db0;font-size:12px;margin-top:44px;line-height:1.8;}
+footer b{color:#a78bfa;}
+footer .nchu{color:#7dd3fc;}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="wrap">
+
+  <header>
+    <div class="logo">王牌机库</div>
+    <div class="sub">真实飞机（军机 + 民航 + 无人机）· 按技术先进度定稀有度 · 航空科普图鉴</div>
+    <div>
+      <span class="badge">十连保底：至少一张 <b>紫</b> 或更高</span>
+      <span class="badge school-badge">天蓝卡 = 南昌航空大学校机（概率按真实技术等级）</span>
+    </div>
+  </header>
+
+  <div class="legend">
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#9e9e9e,#616161)"></span>灰</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#66bb6a,#1b5e20)"></span>绿</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#26c6da,#006064)"></span>青</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#42a5f5,#0d47a1)"></span>蓝</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#ab47bc,#4a148c)"></span>紫</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#ffa726,#e65100)"></span>橙</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#ef5350,#b71c1c)"></span>红</span>
+    <span class="lv"><span class="dot" style="background:linear-gradient(135deg,#ff6ec7,#ffd700)"></span>彩</span>
+    <span class="lv sky"><span class="dot"></span>天蓝 · 南航校机</span>
+  </div>
+
+  <div class="draw-panel">
+    <div class="gacha" id="gacha"></div>
+    <div class="hud">
+      <div class="stat">累计抽取<b id="stTotal">0</b>张</div>
+      <div class="stat">已点亮图鉴<b id="stColl">0 / 0</b></div>
+      <div class="stat">最高稀有度<b id="stBest">—</b></div>
+    </div>
+    <button class="btn-draw" id="btnDraw">十 连 抽 卡</button>
+    <div class="hint">每十张必含至少一张紫卡 · 点击卡片看科普，详情页可切换真实照片</div>
+  </div>
+
+  <div class="result" id="result" style="display:none">
+    <div class="result-title"><h2>本 次 抽 卡</h2><span id="resInfo"></span></div>
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <div class="collection">
+    <div class="sec-title">机 库 图 鉴 <span class="sub" id="collSub"></span></div>
+    <div class="prog"><i id="prog"></i></div>
+    <div class="col-grid" id="colGrid"></div>
+  </div>
+
+  <footer>
+    本游戏卡池收录 170 款真实飞机（军机 100 + 民航客机 50 + 无人机 20）· 稀有度按技术先进程度划分<br>
+    <b>灰</b>最基础，<b>彩</b>为技术最前沿 ·
+    <span class="nchu">初教-5 / 强-5 / L-15 猎鹰 为南昌航空大学校机（天蓝卡），概率按真实技术等级</span>
+  </footer>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose">×</button>
+    <div class="m-pic" id="mPic"></div>
+    <div class="m-toggle" id="mToggle"></div>
+    <div class="m-open" id="mOpen"></div>
+    <div class="m-badges" id="mBadges"></div>
+    <div class="m-meta" id="mMeta"></div>
+    <div class="m-desc" id="mDesc"></div>
+    <div class="m-facts" id="mFacts"></div>
+  </div>
+</div>
+
+<script>
+/* ================= 稀有度定义 ================= */
+const RLV = [
+  {id:0,key:"gray",  name:"灰", color:["#9e9e9e","#616161"], glow:"#b0b0b0"},
+  {id:1,key:"green", name:"绿", color:["#66bb6a","#1b5e20"], glow:"#4caf50"},
+  {id:2,key:"cyan",  name:"青", color:["#26c6da","#006064"], glow:"#26c6da"},
+  {id:3,key:"blue",  name:"蓝", color:["#42a5f5","#0d47a1"], glow:"#42a5f5"},
+  {id:4,key:"purple",name:"紫", color:["#ab47bc","#4a148c"], glow:"#ab47bc"},
+  {id:5,key:"orange",name:"橙", color:["#ffa726","#e65100"], glow:"#ffa726"},
+  {id:6,key:"red",   name:"红", color:["#ef5350","#b71c1c"], glow:"#ef5350"},
+  {id:7,key:"rainbow",name:"彩",color:["#ff6ec7","#7c3aed"], glow:"#ffd700"}
+];
+
+/* ================= 飞机卡池（170 款真实机型：军机 100 + 民航 50 + 无人机 20） ================= */
+const PLACE = [
+  /* 灰 · 航空初创/一战 */
+  {n:"莱特飞行器",c:"Wright Flyer",rlv:0,year:1903,type:"动力双翼验证机",gen:"航空初创期",
+   desc:"1903年12月17日，莱特兄弟用它完成人类首次有动力、可操纵的持续飞行，12秒飞出36.5米，人类航空时代自此开始。",
+   facts:["首飞当天的<b>12秒、36.5米</b>，是动力航空的起点","动力来自自制的<b>12马力汽油发动机</b>，链条驱动双螺旋桨","首创用<b>翼尖扭转</b>实现滚转控制，奠定三轴操纵概念","现藏美国<b>史密森尼国家航空航天博物馆</b>"]},
+  {n:"福克 E.III",c:"Fokker E.III",rlv:0,year:1915,type:"单翼战斗侦察机",gen:"一战",
+   desc:"一战德国单翼机，率先装备机枪射击协调器，让子弹穿过螺旋桨旋转间隙发射，一度造成令协约国胆寒的“福克灾难”。",
+   facts:["机枪<b>同步协调器</b>让子弹穿过螺旋桨盘，空战方式被彻底改写","单翼布局在一战双翼机中<b>独树一帜</b>，阻力小、速度快","1915—1916年的“<b>福克灾难</b>”令协约国损失惨重"]},
+  {n:"福克 Dr.I",c:"Fokker Dr.I",rlv:0,year:1917,type:"三翼战斗机",gen:"一战",
+   desc:"“红男爵”里希特霍芬的最后座驾。三层翼面提供巨大升力，低速缠斗性能极佳，是一战最具传奇色彩的战机。",
+   facts:["<b>红男爵</b>的80架战绩大部分在此机取得，红色涂装由此成名","三层翼面<b>翼面积大</b>，转弯半径极小，适合咬尾缠斗","木质骨架、帆布蒙皮，翼间箱形支柱连接"]},
+  {n:"索普维斯骆驼",c:"Sopwith Camel",rlv:0,year:1916,type:"双翼战斗机",gen:"一战",
+   desc:"协约国一战击落战绩最高的战斗机。旋转汽缸引擎让全机质量集中，右滚转快得惊人，但也暴烈难驾驭。",
+   facts:["总战绩<b>超1200架</b>，为盟军一战战斗机之冠","旋转引擎+集中质量带来极速右转，格斗中近乎无解","操纵过于凶猛，<b>新学员训练事故</b>损失甚至超过战损"]},
+  {n:"信天翁 D.III",c:"Albatros D.III",rlv:0,year:1916,type:"双翼战斗机",gen:"一战",
+   desc:"德国信天翁系列精华之作，率先采用流线半硬壳机身，速度领先同期协约国战机，是“血色四月”的主角。",
+   facts:["<b>V形层板半硬壳机身</b>阻力小，速度比同期协约国战机快约30km/h","1917年“<b>血色四月</b>”中重创英国皇家飞行队","红男爵早期座机，成名红色涂装始于信天翁"]},
+  {n:"斯帕德 XIII",c:"SPAD S.XIII",rlv:0,year:1916,type:"双翼战斗机",gen:"一战",
+   desc:"法国一战末期主力战斗机，搭载V-8液冷引擎，结构坚固、俯冲速度极快，美军王牌也大量驾驶该机。",
+   facts:["<b>150马力级V-8液冷引擎</b>，直线与俯冲速度优异","结构极其<b>坚固耐用</b>，能承受大过载俯冲拉起","美军头号王牌<b>里肯巴克</b>（26胜）的座机"]},
+  {n:"纽波特 17",c:"Nieuport 17",rlv:0,year:1916,type:"双翼战斗机",gen:"一战",
+   desc:"法国单支柱双翼机的经典，下翼比上翼窄的“一翼半”布局轻快灵活，协约国空军名机。",
+   facts:["<b>单支柱+“一翼半”</b>布局，轻快灵活","多次装备协约国王牌中队","下翼下垂、视野开阔，缠斗表现优于同代双翼机"]},
+  {n:"初教-5",c:"Nanchang CJ-5",rlv:0,year:1954,type:"初级教练机",gen:"新中国第一架飞机",school:true,
+    desc:"1954年7月3日，初教-5在南昌320厂首飞成功——这是新中国制造的第一架飞机。作为南昌航空大学校机，它是“航空报国”精神的图腾；但按真实技术等级，它只是一架仿雅克-18的下单翼活塞初级教练机，因此抽中概率较高。",
+   facts:["1954年<b>7月3日</b>首飞于<b>南昌320厂</b>，新中国第一架飞机","毛泽东亲签嘉勉信：“在建立我国的飞机制造业上……<b>良好的开端</b>”","结束了中国<b>不能自主制造飞机</b>的历史，仿制雅克-18","<b>南昌航空大学</b>1952年为航空工业建校育人，与首机之城南昌<b>同根同源</b>","【天蓝卡】按真实技术等级（灰级）概率出现"]},
+
+  /* ----- 绿 · 二战活塞时代 ----- */
+  {n:"P-51 野马",c:"P-51 Mustang",rlv:1,year:1940,type:"活塞战斗机",gen:"二战",
+   desc:"换装罗尔斯-罗伊斯“梅林”发动机后脱胎换骨，成为二战最优秀的远程护航战斗机，护送轰炸机直抵柏林上空。",
+   facts:["改装英制<b>梅林发动机</b>后高空性能暴涨，一代名机","带副油箱航程<b>超2700公里</b>，首次全程护航柏林空袭","层流翼设计减阻，极速可达<b>700km/h级</b>"]},
+  {n:"超级喷火",c:"Supermarine Spitfire",rlv:1,year:1936,type:"活塞式战斗机",gen:"二战",
+   desc:"英国空军的中流砥柱。独特的椭圆形薄机翼带来优异盘旋性能，与飓风并肩打赢不列颠空战。",
+   facts:["<b>超椭圆薄翼</b>阻力小、升力特性好，盘旋性能冠绝同期","不列颠空战中以少胜多，粉碎德军<b>“海狮计划”</b>","全家族共生产<b>2万余架</b>、改进型40余种"]},
+  {n:"零式 21型",c:"A6M Zero",rlv:1,year:1939,type:"舰载战斗机",gen:"二战",
+   desc:"开战初期综合性能超越所有对手的舰载战斗机。极致减重换来惊人生涯初期机动性，但也埋下易燃的隐患。",
+   facts:["开战初期在<b>速度、航程、机动</b>上全面压制欧美舰载机","为减重省去装甲与自封油箱，后期有“<b>打火机</b>”之称","超<b>2000公里</b>的惊人航程远超同期舰载机"]},
+  {n:"B-29 超级堡垒",c:"B-29 Superfortress",rlv:1,year:1942,type:"战略轰炸机",gen:"二战",
+   desc:"二战技术最复杂的量产轰炸机：全增压座舱、遥控炮塔、计算机瞄准，万米高空执行对日战略轰炸。",
+   facts:["首款全面应用<b>增压座舱</b>的量产轰炸机","<b>遥控炮塔</b>+模拟计算机瞄准，机枪手无需暴露舱外","“埃诺拉·盖伊”号在广岛投下<b>人类首枚原子弹</b>"]},
+  {n:"Bf 109",c:"Messerschmitt Bf 109",rlv:1,year:1935,type:"活塞式战斗机",gen:"二战",
+   desc:"德国空军主力战斗机，二战产量最高的战斗机之一。直接喷射供油发动机让其负G机动不掉功率。",
+   facts:["总产量<b>约34000架</b>，为二战战斗机产量之最","<b>燃油直喷发动机</b>负过载机动不断油，缠斗占优","从西班牙内战打到柏林上空，<b>哈特曼</b>（352胜）座机"]},
+  {n:"伊尔-2",c:"Ilyushin Il-2",rlv:1,year:1939,type:"对地攻击机",gen:"二战",
+   desc:"人类历史上产量最大的作战飞机。装甲机身如同“飞行坦克”，是苏德战场上的“黑死神”。",
+   facts:["总产量<b>约36000架</b>，人类作战飞机产量纪录","机身核心部位整体<b>装甲包裹</b>，机枪炮难以击穿","斯大林评价“<b>如同面包与空气般不可或缺</b>”"]},
+  {n:"P-47 雷霆",c:"P-47 Thunderbolt",rlv:1,year:1941,type:"重战斗轰炸机",gen:"二战",
+   desc:"美国重型活塞战斗机，机身粗壮如牛，星形引擎强力，既是空战屠夫也是俯冲轰炸猛将，防护与火力俱佳。",
+   facts:["机鼻星形引擎+粗壮机身，<b>重防护</b>扛打能力强","既能空战又能俯冲轰炸，是<b>多面手</b>","二战后期美国陆航产量最高的大型战斗机"]},
+  {n:"拉-5",c:"La-5",rlv:1,year:1942,type:"战斗机",gen:"二战",
+   desc:"苏联战争时期主力战斗机，星形空冷引擎，机动与速度兼备，苏联王牌战法的重要座驾。",
+   facts:["星形空冷引擎<b>皮实耐用</b>，维修方便","库尔斯克战役中的主力，空战表现不俗","苏联王牌克里洛夫等驾驶过该机"]},/* ----- 青 · 早期喷气时代 ----- */
+  {n:"Me 262",c:"Messerschmitt Me 262",rlv:2,year:1942,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"世界首款投入实战的喷气式战斗机，后掠翼布局，速度远超盟军任何螺旋桨战机，宣告喷气时代到来。",
+   facts:["两台<b>轴流式涡轮喷气发动机</b>，极速接近900km/h","<b>后掠翼</b>布局领先时代，成为超音速飞机模板","若非燃油短缺与轰炸机化改装命令，战果本可更大"]},
+  {n:"F-86 佩刀",c:"F-86 Sabre",rlv:2,year:1947,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"美国首代喷气战斗机巅峰，35度后掠翼加全动平尾，在朝鲜上空与米格-15展开人类首次大规模喷气机空战。",
+   facts:["俯冲中<b>突破音障</b>的早期量产战机之一","<b>全动平尾</b>+后掠翼，奠定喷气战机基本气动布局","朝鲜“<b>米格走廊</b>”上空的经典对决"]},
+  {n:"米格-15",c:"MiG-15",rlv:2,year:1947,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"苏联首代喷气战斗机的传奇，40度后掠翼加推力惊人的发动机，朝鲜战场上速度与爬升全面压制美军机型。",
+   facts:["<b>37mm+23mm</b>双口径机炮，专为撕碎轰炸机设计","搭载仿尼恩的<b>RD-45发动机</b>，极速超1000km/h","朝鲜战场的“<b>米格走廊</b>”里与F-86对决"]},
+  {n:"苏-7",c:"Su-7 Fitter",rlv:2,year:1955,type:"战斗轰炸机",gen:"首代喷气",
+   desc:"苏联第一代超音速战斗轰炸机，大后掠薄翼低空高速突防的代表作，后来进化出庞大的苏-17/22变后掠翼家族。",
+   facts:["苏联首批<b>超音速</b>作战飞机之一","大后掠薄翼追求高速，但<b>起降滑跑距离长</b>","衍生出苏-17/22可变翼家族，<b>出口十余国</b>"]},
+  {n:"流星",c:"Gloster Meteor",rlv:2,year:1941,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"盟军首款实用喷气式战斗机，与Me 262同代。双发翼根布局，1944年起在英国本土拦截V-1导弹。",
+   facts:["盟军首款<b>实用化喷气战机</b>，1944年投入本土防御","曾以<b>翼尖挑翻</b>的方式击落V-1巡航导弹","战后F.8型曾长期保持<b>平飞速度纪录</b>"]},
+  {n:"米格-17",c:"MiG-17",rlv:2,year:1950,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"米格-15的深度改进型，加长机身、全新后掠翼，跨音速机动性显著提升，中国仿制型即歼-5，开启国产喷气机工业。",
+   facts:["机身加长+<b>45度后掠翼</b>，跨音速盘旋性能大幅提升","中国仿制型<b>歼-5</b>是国产喷气战斗机工业起点之一","在东南亚上空曾与二代美机缠斗"]},
+  {n:"吸血鬼",c:"de Havilland Vampire",rlv:2,year:1943,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"英国首款单发喷气战斗机，双尾梁短舱独特构型，从舰载到教练机衍生出庞大的家族。",
+   facts:["<b>双尾梁</b>构型独特，机鼻进气+直翼","皇家海军首款舰载喷气机（吸血鬼FB.5）","衍生教练型服役至20世纪90年代"]},
+  {n:"F-84 雷电喷气",c:"F-84 Thunderjet",rlv:2,year:1946,type:"喷气式战斗轰炸机",gen:"首代喷气",
+   desc:"美国早期喷气战斗轰炸机的代表作，平直翼布局，火力与载荷兼顾，是朝鲜战争的美军主力机型之一。",
+   facts:["<b>平直梯形翼</b>是早期喷气机典型特征","朝鲜战争中担任<b>战斗轰炸</b>主力","后续改型F-84F改为后掠翼"]},
+
+  /* ----- 蓝 · 第二代超音速 ----- */
+  {n:"F-4 鬼怪 II",c:"F-4 Phantom II",rlv:3,year:1958,type:"双座多用途战斗机",gen:"二代",
+   desc:"越南战争时期美国海空军通用主力，雷达与导弹武装的超视距理念先行者，总产量超5000架。",
+   facts:["双座双发重型布局，<b>空战/对地/侦察</b>全能","早期迷信导弹<b>无机炮</b>，近距缠斗吃亏后外挂机炮吊舱","总产量<b>超5000架</b>，多国使用至21世纪"]},
+  {n:"米格-21",c:"MiG-21",rlv:3,year:1955,type:"战斗机",gen:"二代",
+   desc:"“火箭式”三角翼经典之作，产量超11000架、约50国使用，从冷战一直飞到今天，跨越70年服役史。",
+   facts:["总产量<b>超11000架</b>，史上最成功的超音速战机之一","细长机身+<b>三角翼</b>，高空高速性能优异","至今仍有国家在<b>升级服役</b>"]},
+  {n:"F-104 星战士",c:"F-104 Starfighter",rlv:3,year:1954,type:"高空截击机",gen:"二代",
+   desc:"凯利·约翰逊设计的“人操导弹”：小展弦比薄直翼追求极速2马赫，锋利如刀的机翼前缘薄到能割伤地勤。",
+   facts:["机翼<b>展弦比极小</b>，前缘薄如刀刃","美国空军史上首款<b>2倍音速</b>战机","T型尾+涡流问题致事故频发，有“<b>寡妇制造者</b>”之名"]},
+  {n:"幻影 III",c:"Dassault Mirage III",rlv:3,year:1956,type:"战斗机",gen:"二代",
+   desc:"达索家族成名之作，无尾三角翼布局优雅高效，六日战争中表现惊艳，成为法国航空工业的金字招牌。",
+   facts:["<b>无尾三角翼</b>布局，高速与爬升性能俱佳","1967年<b>六日战争</b>中以少胜多","侦察型曾创造<b>2.2马赫</b>巡航速度纪录"]},
+  {n:"狂风",c:"Panavia Tornado",rlv:3,year:1974,type:"变后掠翼战斗轰炸机",gen:"二代半",
+   desc:"英德意三国联合研制的变后掠翼多用途战机，超低空地形跟踪突防是看家本领，冷战欧洲的低空铁拳。",
+   facts:["<b>变后掠翼</b>自动调节，兼顾起降与高速突防","<b>地形跟踪雷达</b>支持60米级超低空自动飞行","海湾战争中执行低空轰炸封锁任务"]},
+  {n:"萨博 35 龙",c:"Saab J35 Draken",rlv:3,year:1955,type:"战斗机",gen:"二代",
+   desc:"瑞典“全民国防”理念的代表：双三角翼独特布局，能在高速公路短距起降，随时从隐蔽公路升空作战。",
+   facts:["<b>双三角翼</b>布局独步天下","可在<b>公路跑道</b>短距起降，瑞典分布式国防核心","首创<b>高迎角机动</b>技术"]},
+  {n:"苏-24",c:"Su-24 Fencer",rlv:3,year:1967,type:"变后掠战斗轰炸机",gen:"二代半",
+   desc:"苏联变后掠翼战斗轰炸机代表，低空高速突防，冷战时期对西欧纵深打击的尖刀之一。",
+   facts:["<b>变后掠翼</b>兼顾起降与高速","配备地形跟踪雷达，<b>低空突防</b>能力突出","装备数量庞大，是苏联前线航空兵主力"]},
+  {n:"强-5",c:"Nanchang Q-5",rlv:3,year:1965,type:"超音速强击机",gen:"中国第一种超音速强击机",school:true,
+   desc:"南昌洪都陆孝彭主持设计的中国第一种超音速强击机，1972年执行氢弹甩投惊天一掷。作为南昌航空大学校机，卡面为天蓝；按真实技术等级属第二代超音速战机，概率对应蓝级。",
+   facts:["由南昌<b>320厂陆孝彭</b>主持设计，中国首款超音速强击机","1972年飞行员<b>杨国祥</b>驾机执行罗布泊<b>氢弹甩投</b>任务","从米格-19<b>跨声速面积律</b>改型，中西设计融合的杰作","出口多国，<b>服役半个世纪</b>的“亚洲强击机传奇”","【天蓝卡】按真实技术等级（蓝级）概率出现"]},
+
+  /* ----- 紫 · 第三代机动主力 ----- */
+  {n:"F-15 鹰",c:"F-15 Eagle",rlv:4,year:1972,type:"重型制空战斗机",gen:"三代",
+   desc:"“不是为机动而生，却赢在机动”的空优之王。大翼面积、双发大推力、先进雷达，空战交换比至今是传奇。",
+   facts:["美军自报空战交换比<b>超100:0</b>","推重比大于1，可<b>垂直爬升加速</b>","1983年以色列飞行员<b>断翼单发着陆</b>，结构冗余惊人"]},
+  {n:"F-16 战隼",c:"F-16 Fighting Falcon",rlv:4,year:1974,type:"轻型多用途战斗机",gen:"三代",
+   desc:"能量机动理论的化身：首款量产的静不稳定+电传飞控战机，边条翼+翼身融合，9G过载身轻如燕。",
+   facts:["首款量产<b>放宽静稳定+电传飞控</b>战斗机","<b>边条涡升力</b>+翼身融合，盘旋性能极佳","总产量<b>超4600架</b>，“国际战斗机”"]},
+  {n:"F-14 雄猫",c:"F-14 Tomcat",rlv:4,year:1970,type:"舰载战斗机",gen:"三代",
+   desc:"可变后掠翼20°—68°无级调节的舰载重截击机，AWG-9雷达加不死鸟导弹的超远拦截组合，《壮志凌云》让它名扬世界。",
+   facts:["<b>变后掠翼</b>20°—68°无级调节","AWG-9雷达+AIM-54“不死鸟”，可<b>同时攻击6目标</b>","电影《<b>壮志凌云</b>》使其家喻户晓"]},
+  {n:"米格-29",c:"MiG-29",rlv:4,year:1977,type:"前线战斗机",gen:"三代",
+   desc:"苏联前线航空兵的利爪，边条涡流升力+头盔瞄准具+大离轴格斗弹的组合，近距缠斗火力全开。",
+   facts:["<b>头盔瞄准具</b>+R-73大离轴导弹","边条涡流升力，<b>大迎角机动</b>能力出众","首次公开表演<b>“尾冲”</b>惊呆西方"]},
+  {n:"苏-27",c:"Su-27 Flanker",rlv:4,year:1977,type:"重型制空战斗机",gen:"三代",
+   desc:"优雅与力量兼备的空中巨人。大内油、大航程、超级机动，一记“普加乔夫眼镜蛇”成为超机动的世纪标杆。",
+   facts:["<b>“普加乔夫眼镜蛇”</b>：迎角超110°仍可控前飞","不挂副油箱也<b>航程惊人</b>","衍生出苏-30/33/34/35的<b>庞大家族</b>"]},
+  {n:"幻影 2000",c:"Dassault Mirage 2000",rlv:4,year:1978,type:"多用途战斗机",gen:"三代",
+   desc:"法国独立自主路线的代表：无尾三角翼+电传飞控，高空高速与核常兼备，卡吉尔高原精确打击一战证明实力。",
+   facts:["<b>放宽静稳定+电传操纵</b>的无尾三角翼","法国核威慑体系一环，可挂<b>核巡航导弹</b>","1999年<b>卡吉尔冲突</b>中高原精确打击出色"]},
+  {n:"歼-11B",c:"J-11B",rlv:4,year:2002,type:"重型战斗机",gen:"三代改",
+   desc:"苏-27平台的国产深度改进型，复合材料减重、国产航电雷达全面更新，是中国空军的重型骨干。",
+   facts:["苏-27平台的<b>国产深度改进型</b>","装备国产<b>有源相控阵雷达</b>（后期型）","与歼-20/16形成<b>体系搭配</b>"]},﻿/* ----- 橙 · 四代/四代半多用途 ----- */
+  {n:"F/A-18 大黄蜂",c:"F/A-18 Hornet",rlv:5,year:1978,type:"舰载多用途战斗机",gen:"四代",
+   desc:"美国航母甲板上的多面手，边条涡升力+双发双垂尾，战斗攻击一机两用，超级大黄蜂至今仍是舰队主力。",
+   facts:["首创<b>“一机两型”</b>F战斗/A攻击通用设计","边条涡升力+双垂尾，<b>大迎角舰起降</b>性能优异","改进型<b>超级大黄蜂</b>至今为美航母主力"]},
+  {n:"苏-35",c:"Su-35 Flanker-E",rlv:5,year:2008,type:"重型多用途战斗机",gen:"四代半",
+   desc:"四代半巅峰之作：三维矢量喷管发动机+雪豹E相控阵雷达，超机动与探测能力逼近五代水准。",
+   facts:["<b>三维矢量喷管</b>发动机，全向超机动","“<b>雪豹E</b>”无源相控阵雷达探测距离称雄","综合作战能力被评估为<b>接近五代</b>"]},
+  {n:"歼-10C",c:"J-10C",rlv:5,year:2013,type:"多用途战斗机",gen:"四代半",
+   desc:"国产明星战机：鸭式布局+DSI无附面层隔道进气道，有源相控阵雷达+PL-15远程导弹的组合达到国际先进。",
+   facts:["<b>DSI鼓包进气道</b>减重增效","有源相控阵雷达+<b>PL-15</b>远程空空导弹组合","歼-10之父<b>宋文骢</b>院士家族巅峰"]},
+  {n:"歼-16",c:"J-16",rlv:5,year:2012,type:"重型多用途战斗机",gen:"四代半",
+   desc:"基于苏-27平台深度国产化的“炸弹卡车”，有源相控阵雷达+强大挂载能力，与歼-20组成高低搭配体系。",
+   facts:["挂载能力惊人，“<b>炸弹卡车</b>”","<b>有源相控阵</b>雷达+国产先进航电","与歼-20形成“<b>隐身踹门+重锤清场</b>”战术组合"]},
+  {n:"阵风",c:"Dassault Rafale",rlv:5,year:1986,type:"多用途战斗机",gen:"四代半",
+   desc:"“欧洲三雄”中机敏性最佳的全能选手：三角翼+近耦合鸭翼，从航母弹射到核威慑一机通吃，出勤率口碑极佳。",
+   facts:["<b>近耦合鸭翼</b>布局，欧洲敏捷性最佳","一机通吃<b>航母弹射/滑跃</b>两种起降","出勤率与多用途性口碑极佳"]},
+  {n:"台风",c:"Eurofighter Typhoon",rlv:5,year:1994,type:"多用途战斗机",gen:"四代半",
+   desc:"英德意西四国联合研制的鸭翼三角翼高机动战机，高度数字化设计与欧洲顶尖的传感器融合能力。",
+   facts:["四国联合研制，<b>鸭翼+三角翼</b>高机动布局","高度数字化设计，<b>维护工时</b>大幅降低","ECRS雷达与<b>传感器融合</b>欧洲顶尖"]},
+  {n:"F-15E 攻击鹰",c:"F-15E Strike Eagle",rlv:5,year:1985,type:"双座攻击战斗机",gen:"四代",
+   desc:"F-15家族的双座对地改进型，串列双座分工空战与对地，海湾战争与全球反恐行动中表现优异。",
+   facts:["<b>串列双座</b>，后座专职武器控制官","可挂载<b>大量对地弹药</b>，昼夜全天候精确打击","F-15家族最成功改装型之一"]},
+  {n:"L-15 猎鹰",c:"Hongdu L-15 Falcon",rlv:5,year:2006,type:"高级教练机",gen:"国产高教巅峰",school:true,
+   desc:"洪都航空研制的超音速高级教练机，大边条+翼身融合，航电达到四代半水准。作为南昌航空大学校机，卡面为天蓝；按真实技术等级（四代半航电）概率对应橙级。",
+   facts:["<b>洪都航空</b>（南昌）研制的超音速高级教练机","大边条+翼身融合，综航电达<b>四代半水准</b>","出口阿联酋、赞比亚等多国，“<b>教练机中国名片</b>”","为五代机飞行员提供<b>高逼真度</b>训练平台","【天蓝卡】按真实技术等级（橙级）概率出现"]},
+
+  /* ----- 红：第五代隐身 ----- */
+  {n:"F-22 猛禽",c:"F-22 Raptor",rlv:6,year:1997,type:"隐身制空战斗机",gen:"五代",
+   desc:"世界首款服役的第五代隐身战机，隐身、超巡、超机动、传感器融合四合一，停产187架成为“绝版猛禽”。",
+   facts:["五代机<b>4S标准</b>的开山之作","矢量推力支持下可实现<b>70度迎角</b>","仅生产<b>187架</b>即停产，“绝版”"]},
+  {n:"F-35 闪电 II",c:"F-35 Lightning II",rlv:6,year:2006,type:"隐身多用途战斗机",gen:"五代",
+   desc:"“飞行 ISR 节点”：分布式孔径系统+头盔显示取代平显，A/B/C三型覆盖空军陆战队海军，产量已破千。",
+   facts:["<b>分布式孔径系统</b>让飞行员“透视”机体","<b>头盔显示</b>取代传统平显，价值40万美元级","A/B/C三型覆盖陆/海/空，<b>产量破千</b>"]},
+  {n:"歼-20 威龙",c:"J-20",rlv:6,year:2011,type:"隐身重型战斗机",gen:"五代",
+   desc:"中国首款第五代隐身重型战斗机，大边条+远距鸭翼的独特隐身构型，2017年列装作战部队，国之重器。",
+   facts:["独特<b>“鸭翼+边条”</b>隐身构型","侧弹舱首创格斗弹<b>“预伸出舱”</b>","总师<b>杨伟</b>，2017年<b>批量列装</b>"]},
+  {n:"苏-57",c:"Su-57 Felon",rlv:6,year:2010,type:"隐身战斗机",gen:"五代",
+   desc:"俄罗斯第五代战机，兼顾超机动与隐身设计，双发双垂尾+可动边条，2020年起交付量产型。",
+   facts:["<b>可动边条</b>(LERX)独特气动控制","兼顾<b>超机动</b>与部分隐身","量产型<b>2020年起</b>交付"]},
+  {n:"歼-35",c:"J-35 / FC-31",rlv:6,year:2012,type:"舰载隐身战斗机",gen:"五代",
+   desc:"由“鹘鹰”FC-31技术验证机发展而来的舰载五代机，目标弹射与滑跃双模上舰，将与歼-20形成轻重搭配。",
+   facts:["由<b>FC-31“鹘鹰”</b>验证机演进","目标适配<b>弹射+滑跃</b>双模上舰（福建舰）","与歼-20形成<b>轻重搭配</b>"]},
+  {n:"F-117 夜鹰",c:"F-117 Nighthawk",rlv:6,year:1981,type:"隐身攻击机",gen:"隐身开创者",
+   desc:"人类首款纯隐身设计的作战飞机：多面体外形+吸波涂层，雷达截面仅鸟类级，海湾战争夜间首波突防巴格达。",
+   facts:["世界首款<b>纯隐身设计</b>作战飞机","多面体外形压缩雷达截面到<b>0.001㎡级</b>","海湾战争<b>夜间首波突防</b>巴格达无一损失"]},
+  {n:"KF-21 猎鹰",c:"KF-21 Boramae",rlv:6,year:2022,type:"准五代战斗机",gen:"五代准",
+   desc:"韩国研制的准五代机，气动与隐身外形接近五代标准，但初期型号未设内部弹舱，被称为“四代半+”的隐身之路。",
+   facts:["外形按<b>五代标准</b>隐身设计","初期型号<b>无内置弹舱</b>，外挂为主","目标2026年量产，韩国国产航空里程碑"]},
+  {n:"苏-75 猎手",c:"Su-75 Checkmate",rlv:6,year:2021,type:"单发五代验证机",gen:"五代",
+   desc:"俄罗斯单发第五代隐身战机验证机，追求低成本外贸路线，菱形机身+单发构型在五代机中独树一帜。",
+   facts:["<b>单发</b>五代机的罕见构型","面向<b>外贸市场</b>的低成本方案","2021年莫斯科航展首次公开"]},
+
+  /* ----- 彩：技术最前沿 ----- */
+  {n:"NGAD 制空平台",c:"Next-Gen Air Dominance",rlv:7,year:2030,type:"第六代制空系统",gen:"六代概念",
+   desc:"美国空军下一代空中优势计划：以有人六代机为核心、协同无人僚机构成系统簇，数字工程+开放架构快速迭代。",
+   facts:["以“<b>系统簇</b>”理念打造的下一代制空体系","含<b>协同作战飞机(CCA)</b>无人僚机","<b>数字工程+开放架构</b>，软件定义升级"]},
+  {n:"歼-XX 六代验证机",c:"J-XX 6th-Gen Concept",rlv:7,year:2026,type:"第六代技术验证",gen:"六代",
+   desc:"国产第六代战斗机技术验证方向：无尾全向隐身构型与有人-无人协同体系构想，代表中国航空的最前沿探索。",
+   facts:["据公开报道采用<b>无尾构型</b>的宽频隐身设计方向","瞄准<b>超大航程</b>与全向宽频隐身指标","与<b>有人-无人协同</b>作战体系深度关联"]},
+  {n:"B-21 突袭者",c:"B-21 Raider",rlv:7,year:2023,type:"隐身战略轰炸机",gen:"六代",
+   desc:"2023年11月首飞的下一代远程打击轰炸机，世界首款按“六代”定位研制的军机，飞翼隐身+开放架构。",
+   facts:["<b>2023年11月</b>首飞，世界首款“六代”军机","<b>飞翼隐身</b>+开放架构","计划产量<b>100架级</b>，替代B-2A与B-1B"]},
+  {n:"B-2 幽灵",c:"B-2 Spirit",rlv:7,year:1989,type:"隐身战略轰炸机",gen:"四代隐身",
+   desc:"飞翼隐身轰炸机的开山之作，全黑涂装如幽灵，21架部署在密苏里，全球范围内一次出击即可改写战略平衡。",
+   facts:["<b>纯飞翼</b>构型，无垂尾无机身","隐身+大载弹量，<b>战略级</b>存在","全球仅<b>20余架</b>，价值堪比黄金"]},
+   {n:"SR-72 超声速侦察",c:"SR-72 Concept",rlv:7,year:2026,type:"高超音速验证机",gen:"六代概念",
+   desc:"洛克希德·马丁计划中的“双三”高超音速侦察验证机，目标是超过6马赫的极限速度，代表高空高速侦察的未来。",
+   facts:["目标<b>6马赫以上</b>巡航，“双三”指标","<b>涡轮+冲压</b>组合动力路线","SR-71黑鸟的精神继任者"]},
+  {n:"布莱里奥 XI",c:"Blériot XI",rlv:0,year:1909,type:"早期单翼机",gen:"航空初创",
+   desc:"1909年布莱里奥驾驶它完成人类首次飞越英吉利海峡，单翼木结构、拉力螺旋桨，早期航空的传奇之作。",
+   facts:["1909年<b>37分钟</b>飞越英吉利海峡，震动欧洲","早期<b>单翼机</b>布局代表之一","木质钢管骨架、帆布蒙皮的极简构造"]},
+  {n:"布里斯托 F.2B",c:"Bristol F.2B",rlv:0,year:1917,type:"双座战斗侦察机",gen:"一战",
+   desc:"一战英国“布里斯托战士”，双座机打得比单座机还凶，前后座机枪火力组合成为经典战术。",
+   facts:["双座设计却以<b>空战见长</b>，战果累累","前座驾驶员+后座机枪手<b>火力覆盖</b>","被视为一战<b>最优秀的双座战斗机</b>"]},
+  {n:"福克 D.VII",c:"Fokker D.VII",rlv:0,year:1918,type:"双翼战斗机",gen:"一战",
+   desc:"一战末期德军王牌主力，坚固厚重、爬升优异，协约国甚至专门在投降条款中要求<b>移交全部D.VII</b>。",
+   facts:["《凡尔赛条约》中<b>唯一被点名</b>的飞机型号","厚翼+箱形支柱，中低空缠斗极强","一战末期性能全面压制协约国战机"]},
+  {n:"P-40 战鹰",c:"P-40 Warhawk",rlv:1,year:1938,type:"活塞战斗机",gen:"二战",
+    desc:"机头画着鲨鱼嘴的“飞虎队”座机，坚固耐用，在亚洲上空以高速俯冲（Boom and Zoom）战术对抗零战一战成名。",
+   facts:["飞虎队（<b>陈纳德</b>航空志愿队）主力座机","机首鲨鱼嘴涂装成为二战经典形象","产量<b>超13700架</b>，多国列装"]},
+  {n:"Fw 190",c:"Focke-Wulf Fw 190",rlv:1,year:1939,type:"活塞战斗机",gen:"二战",
+   desc:"德国后期主力，星形空冷引擎+宽阔后掠翼，在西北欧战场上曾一度让盟军机队吃尽苦头。",
+    facts:["被称为“<b>屠夫之鸟</b>”（德国空军的王牌机）","星形空冷引擎耐打耐穿，难以击落","共生产<b>超2万架</b>"]},
+  {n:"P-38 闪电",c:"Lockheed P-38 Lightning",rlv:1,year:1939,type:"双发战斗机",gen:"二战",
+   desc:"双机身加中央吊舱的独特造型，速度快、航程远，击落山本五十六的正是P-38机队。",
+   facts:["双尾梁+中央吊舱<b>辨识度极高</b>","1943年击落<b>山本五十六</b>座机","太平洋战场上美军的远洋利器"]},
+  {n:"P-80 流星",c:"Lockheed P-80 Shooting Star",rlv:2,year:1943,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"美国首款量产喷气机，直翼单发，战后大量服役于美军与盟国，标志着美军进入喷气时代。",
+   facts:["美国<b>首款量产喷气战斗机</b>","1944年试飞，战后成为主力机","承担了朝鲜战争初期的侦察与护航"]},
+  {n:"米格-19",c:"MiG-19",rlv:2,year:1953,type:"喷气式战斗机",gen:"首代超音速",
+   desc:"世界首款量产超音速战斗机，后掠翼加单发大推力，1960年代中国仿制型歼-6产量超4000架。",
+   facts:["人类<b>首款量产超音速</b>战斗机","中国仿制型<b>歼-6</b>产量超4000架","翼刀+后掠翼，高空高速稳定"]},
+  {n:"幻影 F-1",c:"Dassault Mirage F1",rlv:3,year:1966,type:"战斗机",gen:"二代",
+   desc:"幻影III后达索又回归常规后掠翼布局，多用途性能出色，出口多国，法国空军的过渡之翼。",
+   facts:["罕见地回归<b>常规后掠翼</b>布局","多用途能力出众，出口<b>7国</b>","继承幻影家族雷达与导弹技术"]},
+  {n:"歼-8II",c:"J-8II",rlv:3,year:1984,type:"高空截击机",gen:"二代半",
+   desc:"中国自行研制的二代高空高速截击机，机头两侧进气道加装雷达，是歼-8家族的重要改进型。",
+   facts:["由<b>机鼻进气道</b>改两侧进气道，载雷达","高空高速性能突出，专职截击轰炸机","国产战机双发重型路线的代表"]},
+  {n:"F-105 雷公",c:"F-105 Thunderchief",rlv:3,year:1955,type:"超音速攻击机",gen:"二代",
+   desc:"越战美军主力攻击机，机鼻上方进气口造型怪异，可挂大量炸弹，被称为“飞行的雷电”。",
+   facts:["越战中<b>损失数最多</b>但也轰炸最狠的美机","机鼻<b>上方进气口</b>的奇特外形","可载弹<b>6.4吨</b>级，载弹量大"]},
+  {n:"米格-31",c:"MiG-31 Foxhound",rlv:3,year:1975,type:"重型截击机",gen:"二代半",
+   desc:"米格-25的后继者，双发双座重型截击机，超远程雷达与远程导弹的结合，拦截高速目标的高手。",
+   facts:["最大速度<b>2.83马赫</b>，是现役最快战斗机之一","雪豹相控阵雷达探测距离<b>超200公里</b>","与“匕首”高超音速导弹整合的载机"]},
+  {n:"苏-30",c:"Su-30",rlv:4,year:1990,type:"重型多用途战斗机",gen:"三代半",
+   desc:"苏-27家族双座多用途延伸，曾大量出口印度、中国，是第三代重型机的国际名片。",
+   facts:["双座化改造，<b>多用途</b>性能强化","出口中印等<b>多国</b>列装","具备空中加油能力，航程进一步拉长"]},
+  {n:"JAS-39 鹰狮",c:"Saab JAS-39 Gripen",rlv:4,year:1988,type:"轻型多用途战斗机",gen:"三代",
+   desc:"瑞典新一代轻型多用途战机，鸭式布局+电传飞控，可公路起降、维修成本低，被称为“穷人”的五代思路。",
+    facts:["鸭式布局+<b>电传飞控</b>","可在<b>公路</b>短距起降，野战化设计","全寿命成本低，出口多国的“性价比之选”"]},
+  {n:"苏-34 鸭嘴兽",c:"Su-34 Fullback",rlv:5,year:1990,type:"战斗轰炸机",gen:"四代",
+   desc:"“鸭嘴”扁平机鼻与并列双座极具辨识度，重型战斗轰炸机，内置弹舱与外挂点兼具。",
+   facts:["扁平的<b>鸭嘴机鼻</b>+并列双座","座舱有<b>休息舱/厨房</b>等长期任务设计","既当战斗机又当轰炸机双角色"]},
+  {n:"F-2 支援战斗机",c:"Mitsubishi F-2",rlv:5,year:1995,type:"多用途战斗机",gen:"四代",
+   desc:"日本以F-16为蓝本放大的“更大战隼”，换装国产雷达与先进航电，肩负对海反舰任务。",
+   facts:["F-16机体<b>放大改进</b>，更大机翼","与<b>93式反舰导弹</b>组合对海打击","日本航电国产化的重要平台"]},
+  {n:"歼-16D 电战机",c:"J-16D",rlv:6,year:2014,type:"电子战飞机",gen:"四代半",
+   desc:"歼-16系列的电子战改型，翼尖大型电子侦察吊舱，专司电磁压制与侦察，被誉为“电磁刀锋”。",
+   facts:["翼尖<b>大型电子侦察吊舱</b>","专职<b>电子压制</b>与战场侦察","与新歼-16形成体系编队"]},
+  {n:"TF-X 卡安",c:"TAI TF-X KAAN",rlv:6,year:2025,type:"隐身战斗机",gen:"五代",
+   desc:"土耳其自行研制的五代隐身战机，2024年2月首飞，西亚航空工业的雄心之作。",
+   facts:["2024年2月<b>成功首飞</b>","设计上瞄准<b>五代隐身</b>标准","预计2030年代批量列装土耳其空军"]},
+  {n:"X-37B 轨道试验机",c:"Boeing X-37B",rlv:7,year:2010,type:"无人太空飞机",gen:"空间前沿",
+   desc:"可重复使用的无人太空飞机，由火箭发射入轨，在轨数月后自动返航着陆，属于航空航天的跨界之作。",
+   facts:["无人驾驶<b>可重复使用</b>太空飞机","在轨时间可<b>长达数百天</b>","机密任务众多，被称为“太空飞机”"]},
+{n:"SR-91 曙光",c:"Aurora SR-91",rlv:7,year:1990,type:"高超音速侦察概念",gen:"前沿概念",
+   desc:"传说中的高超音速侦察机“曙光”，外界推测速度可达5马赫以上，虽从未被官方证实，却是航空迷心中的终极谜团。",
+   facts:["外界推测速度<b>5马赫以上</b>","从未被<b>官方证实</b>的存在","黑鸟SR-71的浪漫传承"]},
+  {n:"索普威斯小马",c:"Sopwith Pup",rlv:0,year:1916,type:"双翼战斗机",gen:"一战",
+   desc:"一战英国小巧灵活的“小马”，比骆驼更早登场，以轻盈敏捷著称，是英国海军和空军的轻骑兵。",
+   facts:["<b>轻巧灵活</b>，操作温和好上手","一战英国<b>主力</b>双翼机之一","以“小狗”昵称闻名，深受飞行员喜爱"]},
+  {n:"皇家 S.E.5",c:"Royal Aircraft S.E.5",rlv:0,year:1916,type:"双翼战斗机",gen:"一战",
+   desc:"与骆驼并列的一战英国主力双翼机，火力强、速度快，王牌座驾云集，是英军战线的空中坚盾。",
+   facts:["装备<b>双挺机枪</b>，火力充沛","一战英国产量最大的战斗机之一","王牌飞行员（如麦克可登）的座机"]},
+  {n:"F6F 地狱猫",c:"F6F Hellcat",rlv:1,year:1943,type:"舰载战斗机",gen:"二战",
+   desc:"美国海军反制零战设计的重型舰载机，装甲防护加引擎功率压制，一举扭转太平洋制空权。",
+   facts:["专为<b>克制零式</b>设计的重型舰载机","交换比超<b>19:1</b>，海军王牌机","“地狱猫”之名实至名归"]},
+  {n:"F4U 海盗",c:"F4U Corsair",rlv:1,year:1940,type:"舰载战斗机",gen:"二战",
+   desc:"以倒海鸥翼著称的美国舰载机，速度与爬升俱佳，朝鲜战争中继续立战功，被称为“弯翼奇迹”。",
+   facts:["<b>倒海鸥翼</b>是它的标志","二战中空战速度最快的舰载机之一","朝鲜战场继续使用，谢幕时刻仍在发光"]},
+  {n:"米格-9",c:"MiG-9",rlv:2,year:1946,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"苏联早期喷气机代表之一，机鼻上方双发布局，是苏联喷气时代的先行者。",
+   facts:["苏联<b>早期喷气机</b>代表","机鼻<b>上方双进气口</b>的独特造型","为米格-15的成功奠定基础"]},
+  {n:"拉-15",c:"La-15",rlv:2,year:1948,type:"喷气式战斗机",gen:"首代喷气",
+   desc:"拉沃契金设计的早期喷气机，机翼根部尾喷的整洁布局，是苏联喷气机中的另一支劲旅。",
+   facts:["翼根<b>尾喷管</b>布局简洁","苏联早期喷气机之一","后被米格家族取代"]},
+  {n:"苏-15 拦截者",c:"Su-15 Interceptor",rlv:3,year:1962,type:"高空截击机",gen:"二代",
+   desc:"苏联专司拦截的高速截击机，机鼻两侧进气道，是冷战对西部边界保卫的重要一环。",
+   facts:["专职<b>高空高速拦截</b>","曾击落过韩国客机（1983年事件）","苏联防空军的主力截击机之一"]},
+  {n:"F-8 十字军",c:"F-8 Crusader",rlv:3,year:1955,type:"舰载战斗机",gen:"二代",
+   desc:"美国最后一款机炮舰载机，可变迎角机翼让它可以压低鼻梁降落，是“最后的有炮手”。",
+   facts:["<b>可变迎角机翼</b>便于舰上起降","美国海军最后一款<b>机炮主力</b>舰载机","“最后的枪手”称号名不虚传"]},
+  {n:"F-111 土豚",c:"F-111 Aardvark",rlv:3,year:1967,type:"变后掠翼战斗轰炸机",gen:"二代半",
+   desc:"美式变后掠翼战斗轰炸机，低空高速突防的先锋，绰号“土豚”，夜间低空突破能力极强。",
+   facts:["<b>变后掠翼</b>低空高速突防代表","“<b>土豚</b>”的昵称来源于其伏地长鼻","多用于夜间低空轰炸任务"]},
+  {n:"F-5 自由战士",c:"F-5 Freedom Fighter",rlv:4,year:1959,type:"轻型战斗机",gen:"三代",
+   desc:"美国轻量级战斗机代表作，机动好、维护省，出口数十国的“国际战斗机”。",
+   facts:["<b>轻巧廉价</b>的多国出口机型","二手改装后多国长期使用","“国际战斗机”定位精准"]},
+  {n:"A-10 雷电 II",c:"A-10 Thunderbolt II",rlv:4,year:1972,type:"对地攻击机",gen:"三代",
+   desc:"“疣猪”A-10，专为反坦克设计的对地攻击机，机头一门七管炮就是它的招牌，皮糙肉厚。",
+   facts:["机头<b>GAU-8七管机炮</b>可撕开装甲","<b>装甲浴缸</b>防护飞行员","美军对地支援长青树"]},
+  {n:"歼-10A",c:"J-10A",rlv:4,year:1998,type:"战斗机",gen:"三代",
+   desc:"歼-10家族的原型与批量型，鸭式布局+三角翼，是中国三代机的里程碑。",
+   facts:["歼-10<b>首飞</b>（1998）开启国产三代机时代","鸭式布局+<b>三角翼</b>气动","总师<b>宋文骢</b>的传世之作"]},
+  {n:"米格-35",c:"MiG-35",rlv:5,year:2007,type:"多用途战斗机",gen:"四代半",
+   desc:"米格-29深度改进的四代半机，新型雷达与矢量喷管，目标直指国际军贸市场。",
+   facts:["米格-29家族<b>四代半深度改进</b>","<b>有源相控阵雷达</b>","与苏-35同台竞争国际市场"]},
+  {n:"歼-15 飞鲨",c:"J-15",rlv:5,year:2009,type:"舰载战斗机",gen:"四代",
+   desc:"中国首款航母舰载战斗机，苏-27家族舰载化改装，折叠翼与着舰钩是标志。",
+   facts:["中国<b>首款舰载战斗机</b>","<b>折叠翼+着舰钩</b>舰载特征","随辽宁舰/山东舰远航"]},
+  {n:"歼-20S",c:"J-20S",rlv:6,year:2021,type:"双座隐身战斗机",gen:"五代",
+   desc:"歼-20 的双座型，后座可指挥无人机蜂群，是五代机“有人-无人协同”的先驱尝试。",
+   facts:["世界首款<b>双座五代隐身</b>战机（2021首飞）","后座专职<b>指挥无人机蜂群</b>","智能化空战的先锋平台"]},
+  {n:"F-16XL",c:"F-16XL",rlv:6,year:1982,type:"验证机",gen:"四代验证",
+   desc:"F-16的加长三角翼验证机，大载弹量低阻力，虽未量产却为现代机翼设计提供了宝贵数据。",
+   facts:["<b>三角翼</b>版本的F-16","载弹量提升<b>一倍</b>以上","其设计理念催生了 F-35 的机翼方案"]},
+  {n:"XB-70 女武神",c:"XB-70 Valkyrie",rlv:7,year:1964,type:"超音速轰炸验证机",gen:"前沿验证",
+   desc:"美苏对峙时代为洲际核打击设计的3马赫轰炸机，白色巨鸟般的女武神只造了2架，却定义了超音速轰炸的极限。",
+   facts:["设计极速<b>3马赫</b>的巨兽","可下折翼尖的<b>可变几何</b>设计","因洲际导弹兴起而被取代"]},
+  {n:"协和号",c:"Concorde",rlv:7,year:1969,type:"超音速客机",gen:"民航前沿",
+   desc:"英法合制的超音速客机，让跨大西洋飞行缩短到3小时，是民航史上最快最优雅的传奇。",
+   facts:["巡航速度<b>2倍音速</b>","伦敦—纽约仅需<b>约3小时</b>","2003年退役，仍是民航速度纪录保持者"]},
+  {n:"H-20",c:"H-20（传闻）",rlv:7,year:2025,type:"隐身战略轰炸机（传闻）",gen:"六代概念",
+   desc:"广泛流传的中国下一代隐身战略轰炸机项目，据称飞翼构型、远程打击，虽未官宣，却是大国空军的想象符号。",
+   facts:["传闻中的<b>中国隐身战略轰炸机</b>","预计<b>飞翼隐身</b>构型","虽未公开，但“轰-20”已是热议焦点"]},
+  {n:"CCA 无人僚机",c:"CCA Loyal Wingman",rlv:7,year:2030,type:"协同作战无人机",gen:"六代概念",
+   desc:"美国空军构想的“忠诚僚机”，由六代机指挥的自主作战无人机，有人无人协同的未来空中力量形态。",
+   facts:["<b>有人-无人协同</b>作战理念的载体","可携带导弹、侦察等多种任务","预计2030年代成型"]},
+
+  /* ----- 民航客机 ----- */
+  {n:"DC-3",c:"Douglas DC-3",rlv:0,year:1936,type:"活塞螺旋桨客机",gen:"民航初创",
+   desc:"民航史上最成功的活塞客机，没有之一。让跨美航线一夜盈利，军用型C-47在诺曼底空投奇兵，几乎以一己之力定义了“现代客机”。",
+   facts:["全球产量约<b>16000架</b>（含军用C-47）","战后大量C-47转民用，撑起<b>民航复兴</b>","至今仍有数百架在飞，服役<b>近90年</b>","艾森豪威尔评其为<b>二战五大决胜装备</b>之一"]},
+  {n:"波音 707",c:"Boeing 707",rlv:2,year:1958,type:"四发喷气客机",gen:"喷气民航元年",
+   desc:"波音民航霸业的开山之作：美国首款量产喷气客机，把洲际旅行从颠簸的活塞时代带入平稳的喷气时代。",
+   facts:["1958年投入跨大西洋航线，<b>喷气民航时代</b>开启","衍生出<b>空军一号</b>、E-3预警机等特种平台","翼吊发动机+后掠翼成为<b>后世客机模板</b>","中国民航曾引进使用"]},
+  {n:"波音 737",c:"Boeing 737",rlv:3,year:1967,type:"双发窄体客机",gen:"民航中坚",
+   desc:"人类历史上产量最高的喷气客机。1967年首飞至今生产超万台，全球短中程航线的绝对主力，平均每一刻都有上千架737同时在天上飞。",
+   facts:["总产量<b>超11000架</b>，民航史之最","从-100到MAX<b>四代同堂</b>，生产线60余年不衰","全球每时每刻约有<b>上千架</b>在空中","中国是其最重要市场之一"]},
+  {n:"波音 747",c:"Boeing 747",rlv:3,year:1969,type:"四发宽体客机",gen:"宽体时代开创者",
+   desc:"不折不扣的“空中女王”：首架宽体客机，上层甲板驼峰一眼可辨，把洲际旅行成本腰斩，客运退役后仍在货机上续写传奇。",
+   facts:["首款<b>宽体双通道</b>客机","驾驶舱上移造就标志性<b>“驼峰”</b>","曾是<b>空军一号</b>与航天飞机驮运平台","退役客机大量转为<b>货机</b>续飞"]},
+  {n:"A320",c:"Airbus A320",rlv:4,year:1987,type:"双发窄体客机",gen:"电传民航",
+   desc:"空客挑战波音的传奇之作：民航首款全电传操纵客机，侧杆+玻璃座舱定义了此后所有客机的驾驶舱形态。",
+   facts:["民航史上首款<b>全电传飞控</b>客机","<b>侧杆操纵</b>从此成为客机标配","neo系列换发后再创<b>销量纪录</b>","中国是其最大单一市场之一"]},
+  {n:"ARJ21 翔凤",c:"COMAC ARJ21",rlv:4,year:2008,type:"双发支线客机",gen:"国产支线",
+   desc:"中国首款按国际适航标准自主研制的喷气支线客机，历经曲折取证，为C919蹚出了一条完整的民用航空工业之路。",
+   facts:["中国首款<b>自主研制</b>喷气支线客机","2015年交付，<b>成都航空</b>全球首家运营","78~90座级瞄准<b>支线市场</b>","取证的坎坷为<b>C919铺路</b>"]},
+  {n:"A380",c:"Airbus A380",rlv:5,year:2005,type:"四发超宽体客机",gen:"巨型民航",
+   desc:"航空巨无霸：史上载客量最大的客机，双层全通甲板典型布局500余人。工程上的绝唱、商业上的遗憾——但它仍是无数人心中最震撼的飞行。",
+   facts:["全球唯一<b>全双层</b>客机","典型布局载客<b>500余人</b>，极限800+","翼展近<b>80米</b>，机场为它专门扩建","2021年停产，共交付<b>251架</b>"]},
+  {n:"A350",c:"Airbus A350",rlv:5,year:2013,type:"双发宽体客机",gen:"复合材料宽体",
+   desc:"空客的复合材料答卷：53%复合材料机身+碳纤维机翼，“墨镜”风挡是它的名片，超低油耗让它成为新一代远程航线的宠儿。",
+   facts:["机身<b>53%复合材料</b>，宽体机最高之一","标志性<b>黑色“墨镜”风挡</b>","最大航程<b>18000公里</b>级","与787并称<b>新一代远程宽体双雄</b>"]},
+  {n:"波音 787",c:"Boeing 787 Dreamliner",rlv:6,year:2009,type:"双发宽体客机",gen:"复材梦想",
+   desc:"民航材料的革命者：机身50%复合材料，一步跨入“塑料飞机”时代。更高客舱湿度、可调光大舷窗、超低油耗，把舒适本身做成了卖点。",
+   facts:["机身<b>50%复合材料</b>，首型复材客机","舷窗比传统大<b>65%</b>且可电子调光","同级油耗低约<b>20%</b>","中国工厂参与其机体部件制造"]},
+  {n:"C919",c:"COMAC C919",rlv:6,year:2017,type:"双发窄体客机",gen:"国产大飞机",
+   desc:"中国自主设计的大型喷气客机，与A320、737同台竞技。2017年首飞、2022年取证交付，让中国民航工业在运-10折戟近半个世纪后重返干线舞台。",
+   facts:["<b>2017首飞</b>、<b>2022取证交付</b>","158~192座级，对标<b>A320neo/737MAX</b>","已获<b>上千架</b>订单，东航全球首家运营","距运-10项目<b>40余年</b>，国产大飞机圆梦"]},
+
+  /* ----- 民航客机（第二批） ----- */
+  {n:"波音 247",c:"Boeing 247",rlv:0,year:1933,type:"全金属双发客机",gen:"民航现代化起点",
+   desc:"民航现代化的起点：1933年首飞的首款全金属现代客机，下单翼+收放起落架+除冰系统一应俱全。它的成功逼得对手开发出DC-3——反被后者抢走整个时代。",
+   facts:["首款<b>全金属下单翼</b>现代客机，1933年投入运营","联合航空独家订购，逼得对手竞相研发DC系列","内置<b>除冰靴</b>与可收放起落架的先驱设计","生不逢时：1936年后被<b>DC-3全面超越</b>"]},
+  {n:"塞斯纳 172",c:"Cessna 172 Skyhawk",rlv:0,year:1956,type:"上单翼轻型飞机",gen:"通航传奇",
+   desc:"人类历史上产量最大的飞机：1956年首飞至今生产超44000架，全球飞行员的启蒙之机，无数人第一次摸到的就是它的操纵盘。",
+   facts:["总产量<b>超44000架</b>，史上产量第一的飞机","<b>1956年首飞</b>，至今仍在生产","全球飞行培训的<b>标准教练机</b>","1958年曾被改装连续飞行<b>64天</b>（吃喝睡全在空中）"]},
+  {n:"洛克希德 星座",c:"L-1049 Super Constellation",rlv:1,year:1951,type:"四发活塞客机",gen:"活塞巅峰",
+   desc:"活塞客机的巅峰：海豚形流线机身配三片垂尾，跨大西洋航线上的空中女王，也是艾森豪威尔的总统专机。",
+   facts:["<b>三垂尾+海豚形机身</b>，辨识度拉满","霍华德·休斯为环球航空<b>亲自督造</b>","首架美国总统专机<b>「哥伦拜恩」</b>即星座","活塞客机<b>最后的辉煌</b>，后被喷气机取代"]},
+  {n:"运-5",c:"Nanchang Y-5",rlv:1,year:1957,type:"双翼运输机",gen:"国产万能机",
+   desc:"南昌造的万能老黄牛：仿制安-2的双翼运输机，运人、跳伞、播种、灭虫样样能干，超低速能像风筝一样稳，至今仍在通航一线服役。",
+   facts:["<b>南昌320厂</b>仿制安-2，1957年首飞","改型超<b>30种</b>：客运/跳伞/农林/航拍全能","最低能以<b>160km/h</b>低速超低空飞行","仿制的安-2是<b>生产史最长</b>的机型之一"]},
+  {n:"彗星",c:"de Havilland DH.106 Comet",rlv:2,year:1949,type:"喷气客机",gen:"喷气民航先驱",
+   desc:"世界首型喷气客机：1949年首飞即领先世界，却在1954年因金属疲劳连续解体——它用惨痛代价教会全人类航空结构疲劳设计。",
+   facts:["1949年首飞，<b>世界首款喷气客机</b>","1952年投入伦敦航线，速度远超活塞机","1954年连环事故查明<b>金属疲劳</b>，舷窗方形拐角是祸根","教训写入<b>全球航空结构设计规范</b>"]},
+  {n:"图-104",c:"Tupolev Tu-104",rlv:2,year:1955,type:"喷气客机",gen:"苏联喷气民航",
+   desc:"苏联的喷气骄傲：由图-16轰炸机平台衍生，1956年起在彗星停飞期间一度是世界唯一在飞的喷气客机。",
+   facts:["以<b>图-16轰炸机</b>平台衍生的喷气客机","1956—1958年间<b>世界唯一运营中的喷气客机</b>","机翼前缘带<b>翼刀</b>控制气流","1956年访伦敦惊艳西方航空界"]},
+  {n:"快帆",c:"Sud Aviation Caravelle",rlv:2,year:1955,type:"喷气客机",gen:"法式优雅",
+   desc:"法式优雅：1955年首飞的快帆首创发动机尾吊布局，从此引擎挂在机尾成为支线客机的标准答案。",
+   facts:["首创<b>尾吊双发+T尾</b>布局","舷窗<b>成对菱形排列</b>，如珠宝设计","DC-9等后辈集体效仿其布局","法国航空工业的<b>名片机型</b>"]},
+  {n:"波音 727",c:"Boeing 727",rlv:3,year:1963,type:"三发中短程客机",gen:"三发时代",
+   desc:"三发尾吊的中短程王者：1960年代的销量之王，尾部藏着的登机梯让它可以直抵没有廊桥的小机场。",
+   facts:["1963年首飞，<b>三发布局</b>兼顾高原与远程","机尾内置<b>自动登机梯</b>，不依赖地面设施","1984年停产，共交付<b>超1800架</b>","1960年代<b>最畅销</b>的喷气客机"]},
+  {n:"DC-9",c:"Douglas DC-9",rlv:3,year:1965,type:"双发尾吊窄体",gen:"名门望族",
+   desc:"尾吊双发的家族开创者：1965年首飞，其后代MD-80/90/波音717绵延近半个世纪，堪称民航界的名门望族。",
+   facts:["<b>1965年首飞</b>，尾吊双发窄体布局","家族衍生MD-80/88/90/波音717，<b>40余年</b>不断代","后置发动机让客舱<b>远离噪音</b>","中国民航1980年代曾运营其家族成员MD-82"]},
+  {n:"图-154",c:"Tupolev Tu-154",rlv:3,year:1972,type:"三发干线客机",gen:"苏式干线",
+   desc:"苏式干线三巨头之一：1972年首飞的三发尾吊客机，中国民航也曾用它飞遍全国，机体坚固得出了名。",
+   facts:["<b>三发尾吊</b>苏式干线主力","以<b>结构坚固</b>著称，适应粗糙跑道","中国民航1986—2002年间运营<b>图-154M</b>","共生产约<b>1000架</b>"]},
+  {n:"运-10",c:"Shanghai Y-10",rlv:3,year:1980,type:"四发喷气干线客机",gen:"国产先行者",
+   desc:"中国大飞机的先行者：1980年首飞的自研四发干线客机，七次飞抵拉萨高原，虽因时代所限折戟，却为35年后的C919攒下了火种。",
+   facts:["<b>1980年9月26日</b>上海首飞","中国首款自研<b>四发喷气干线客机</b>","1984年曾<b>七次飞抵拉萨</b>高原试航","1985年终止，<b>经验直接滋养了C919</b>"]},
+  {n:"波音 757",c:"Boeing 757",rlv:4,year:1982,type:"双发窄体客机",gen:"长跑冠军",
+   desc:"窄体中的长跑冠军：机身细长、腿高力大，跨大西洋飞得又稳又远，欧洲度假航线三十年来的常客。",
+   facts:["1982年首飞，<b>窄体远程</b>代表作","与767同期研发<b>共用驾驶舱</b>","起降性能优异，<b>高原机场</b>常客","2004年停产，共交付<b>1050架</b>"]},
+  {n:"波音 767",c:"Boeing 767",rlv:4,year:1982,type:"双发宽体客机",gen:"双发跨洋破冰者",
+   desc:"双发跨洋的破冰者：1985年拿下ETOPS许可，首次让双发客机名正言顺横跨大西洋，如今仍是货运机队主力。",
+   facts:["1982年首飞的<b>中型宽体</b>","1985年首个<b>ETOPS跨洋认证</b>双发宽体","衍生<b>KC-46加油机</b>平台","货机版至今仍是航空货运<b>主力</b>"]},
+  {n:"ATR 72",c:"ATR 72",rlv:4,year:1988,type:"双发涡桨支线客机",gen:"支线涡桨之王",
+   desc:"支线涡桨之王：法意联合打造，油耗低到夸张，是短途小航线的经济答案，全球支线市场的常青树。",
+   facts:["<b>法意联合</b>研制的涡桨支线客机","1988年首飞，载客<b>70人级</b>","涡桨油耗远低于喷气机，<b>短途经济王</b>","全球交付<b>超1000架</b>"]},
+  {n:"新舟 60",c:"Xian MA60",rlv:4,year:2000,type:"双发涡桨支线客机",gen:"国产支线",
+   desc:"国产涡桨支线：脱胎于运-7，性能堪比同级进口机，飞出中国支线客机出口的第一单。",
+   facts:["<b>西飞</b>基于运-7平台研制的涡桨支线","2000年首飞，<b>60座级</b>","出口<b>赞比亚、老挝、汤加</b>等多国","国产民机走出去的<b>早期排头兵</b>"]},
+  {n:"A330",c:"Airbus A330",rlv:4,year:1992,type:"双发宽体客机",gen:"宽体多面手",
+   desc:"宽体双发的多面手：与四发A340同平台而生却青出于蓝，客机货机通吃，中国航司宽体机队的顶梁柱之一。",
+   facts:["与A340同平台，<b>双发版青出于蓝</b>","<b>宽体货机</b>市场份额领先","首型采用<b>电传飞控</b>的空客宽体","中国多家航司的<b>主力宽体</b>"]},
+  {n:"波音 777",c:"Boeing 777",rlv:5,year:1994,type:"大型双发宽体客机",gen:"双发巨兽",
+   desc:"双发巨兽：1994年首飞时是史上最大双发客机，完全用电脑设计的民航第一机，至今仍是远程航线的中流砥柱。",
+   facts:["史上首款<b>完全电脑设计</b>的客机","1994年首飞，当时<b>最大双发客机</b>","首个获批<b>ETOPS-207分钟</b>双发机","777-300ER曾是远程航线<b>顶流</b>"]},
+  {n:"An-225 梦想",c:"Antonov An-225 Mriya",rlv:5,year:1988,type:"超大型运输机",gen:"人类极限",
+   desc:"人类造过的最大飞机：为驮运航天飞机而生，六台发动机、32个机轮，全球仅此一架——2022年毁于战火，成为航空史上最痛的一页。",
+   facts:["为驮运<b>「暴风雪」航天飞机</b>而建","<b>六发</b>动力+<b>32轮</b>起落架，载重250吨","翼展<b>88.4米</b>，至今无人超越","2022年2月毁于战火，<b>全球唯一一架</b>"]},
+  {n:"A220",c:"Airbus A220",rlv:5,year:2013,type:"双发窄体客机",gen:"复材新贵",
+   desc:"加拿大血统的空客新贵：原庞巴迪C系列，机身近半复合材料，油耗与舒适兼备，窄体机市场的新变量。",
+   facts:["前身为庞巴迪<b>C系列</b>，2018年改名A220","机身<b>46%复合材料</b>","普惠<b>齿轮传动发动机</b>（GTF）首次批量应用","驾驶舱仅<b>5块大屏+侧杆</b>"]},
+  {n:"波音 777X",c:"Boeing 777X",rlv:6,year:2020,type:"超大型双发宽体客机",gen:"折叠机翼巨无霸",
+   desc:"折叠机翼的巨无霸：翼展大到来不及靠廊桥，干脆让翼梢像鸟一样折叠——民航史上第一次。",
+    facts:["首型采用<b>可折叠翼梢</b>的民航客机","配<b>GE9X</b>，世界最大涡扇发动机","2020年1月<b>777-9首飞</b>","将刷新<b>最大双发客机</b>纪录"]},
+
+  /* ----- 民航客机（第三批） ----- */
+  {n:"波音 314 剪影",c:"Boeing 314 Clipper",rlv:0,year:1938,type:"四发远程飞艇客机",gen:"跨洋空中邮轮",
+   desc:"泛美航空的「太平洋空中邮轮」：二战前最大的远程客机，船身机身直接在水面起降，机翼里藏着油箱，跨太平洋航线从此只需几站中转。",
+   facts:["<b>船身式</b>机身直接在水面起降，无需陆上机场","机翼内布置<b>整体油箱</b>，航程近6000公里","上层设<b>卧铺与餐厅</b>，堪称空中邮轮","丘吉尔二战期间曾乘它<b>横渡大西洋</b>"]},
+  {n:"DC-6",c:"Douglas DC-6",rlv:1,year:1946,type:"四发活塞干线客机",gen:"活塞客机巅峰",
+   desc:"DC-3 的豪华继任者：战后四发活塞客机的巅峰，增压客舱让洲际飞行头一回变得体面，美国总统专机「独立号」正是由它改装而来。",
+   facts:["<b>增压客舱</b>在道格拉斯量产机上首次普及","杜鲁门专机<b>「独立号」</b>（VC-118）由它改装","四台普·惠<b>R-2800「双黄蜂」</b>引擎，极速585km/h","总产量<b>702架</b>，活塞客机最后的辉煌"]},
+  {n:"伊尔-14",c:"Ilyushin Il-14",rlv:1,year:1950,type:"双发活塞短线客机",gen:"苏式经典",
+   desc:"里-2 的接班人：1950年代苏联与社会主义阵营的短线客机主力，中国曾批量引进，毛泽东的座机「4202号」便是伊尔-14。",
+   facts:["<b>双星形活塞引擎</b>，坚固可靠","毛主席座机<b>「4202号」</b>现藏中国航空博物馆","中国民航与空军<b>批量装备</b>约30年","改进型伊尔-14M服役至1980年代"]},
+  {n:"波音 377 同温层巡航者",c:"Boeing 377 Stratocruiser",rlv:1,year:1947,type:"四发活塞豪华客机",gen:"双层豪华船",
+   desc:"从B-29轰炸机衍生的双层豪华客机：下层是鸡尾酒酒廊，上层是头等客厅，1950年代跨大西洋最奢华的天空，也是波音在喷气时代前的客机巅峰。",
+   facts:["由<b>B-29/C-97</b>轰炸机平台衍生","客舱分<b>上下两层</b>，下层设鸡尾酒廊","泛美航空用它飞<b>跨洋豪华航线</b>","系统复杂<b>故障频发</b>，堪称「华丽的麻烦」"]},
+  {n:"DHC-6 双水獭",c:"de Havilland Canada DHC-6 Twin Otter",rlv:2,year:1965,type:"双发涡桨通用飞机",gen:"短距万能机",
+   desc:"加拿大德·哈维兰的「空中皮卡」：短距起降能力惊人，轮式、浮筒、滑橇随心换，从雪山湖泊到南极冰面，哪里需要哪里去。",
+   facts:["<b>短距起降</b>之王，土跑道水上雪地通吃","可换装<b>浮筒/滑橇</b>，水陆两栖","全球交付<b>近1000架</b>，遍布偏远航线","涡桨+高升力翼面，<b>失速速度极低</b>"]},
+  {n:"福克 F27 友谊",c:"Fokker F27 Friendship",rlv:2,year:1955,type:"双发涡桨支线客机",gen:"欧式支线",
+   desc:"战后欧洲最成功的支线客机：荷兰福克出品，名字就叫「友谊」，全球售出近800架，连美国陆军都用它当运输机。",
+   facts:["1955年首飞，欧洲战后<b>最畅销</b>涡桨支线之一","总产量<b>786架</b>，远销60余国","美军采购版称<b>C-31</b>运输机","直系后代福克50服役到21世纪"]},
+  {n:"DC-10",c:"Douglas DC-10",rlv:3,year:1970,type:"三发宽体客机",gen:"三发宽体",
+   desc:"道格拉斯的宽体三发杰作：垂直尾翼根部藏着第三台引擎，宽体远程运力一步到位，也是美国空军KC-10空中加油机的平台。",
+   facts:["<b>尾垂根部第三台</b>发动机是它的标志","衍生美国空军<b>KC-10</b>加油机59架","宽体客机先驱之一，共造<b>386架</b>","货机版至今仍在运营"]},
+  {n:"L-1011 三星",c:"Lockheed L-1011 TriStar",rlv:3,year:1970,type:"三发宽体客机",gen:"技术先锋",
+   desc:"洛克希德唯一的宽体客机：技术上大胆到激进——直接升力控制、全自动着陆，可惜遭遇罗·罗破产与自家财务困境，商业上生不逢时。",
+   facts:["史上首款获批<b>Cat IIIc全自动着陆</b>的客机","首创<b>直接升力控制</b>改善进近品质","罗·罗<b>RB211三转子</b>涡扇的首秀平台","共生产<b>约250架</b>，达美等航司主力"]},
+  {n:"A310",c:"Airbus A310",rlv:3,year:1982,type:"双发宽体客机",gen:"空客先锋",
+   desc:"空客家族第二位成员：A300缩短机身而来，率先应用超临界翼型，双人制玻璃座舱让远程宽体机的人员成本大减。",
+   facts:["<b>A300缩短改型</b>，空客第二款量产机","率先应用<b>超临界翼型</b>的客机之一","<b>双人制玻璃座舱</b>先驱","衍生<b>A310 MRTT</b>军用加油运输机"]},
+  {n:"里尔喷气 23",c:"Learjet 23",rlv:3,year:1963,type:"双发喷气公务机",gen:"公务机鼻祖",
+   desc:"把战斗机血统塞进商务舱的怪才：发明家比尔·里尔用瑞士P-16攻击机图纸造出公务机鼻祖，飞得比同期客机快得多，开启延续至今的里尔王朝。",
+   facts:["<b>公务喷气机</b>概念的开山之作","设计源自瑞士<b>P-16</b>攻击机方案","极速<b>0.8马赫级</b>，比同期客机快一截","三年即交付<b>104架</b>，市场疯抢"]},
+  {n:"福克 100",c:"Fokker 100",rlv:3,year:1986,type:"双发涡扇支线客机",gen:"支线革新",
+   desc:"福克最后的辉煌：F.28的放大改型，安静、经济、可靠，1990年代支线市场的明星机型，可惜公司破产让它成了绝唱。",
+   facts:["<b>F.28深度改型</b>，机身加长","泰涡扇引擎<b>噪音低</b>，机场社区友好","产量<b>283架</b>，美澳支线主力","1996年福克倒闭，<b>绝唱之作</b>"]},
+  {n:"MD-11",c:"McDonnell Douglas MD-11",rlv:4,year:1990,type:"三发宽体客机",gen:"货运远洋",
+   desc:"DC-10的放大终极版：翼梢小翼省油、驾驶舱两人制，客机生涯平平，却转型成为FedEx机队里的远程货运劳模。",
+   facts:["<b>两人制玻璃座舱</b>取代DC-10三人制","加长机身+<b>小翼</b>省油升级","FedEx <b>货运主力</b>服役至今","共<b>200架</b>，麦道最后的宽体客机"]},
+  {n:"A340",c:"Airbus A340",rlv:4,year:1991,type:"四发远程宽体客机",gen:"四发远程",
+   desc:"空客的四发远程旗舰：双发ETOPS尚不完善的年代，它用四台发动机换来无限直飞自由，新加坡—纽约这样的超长航线曾是它的独门生意。",
+   facts:["<b>四发布局</b>不受ETOPS限制，任意远程航线","与A330<b>同平台</b>研发，共线生产","-500型曾执飞<b>全球最长</b>商业航线","最大航程<b>超16000公里</b>"]},
+  {n:"伊尔-96",c:"Ilyushin Il-96",rlv:4,year:1988,type:"四发宽体客机",gen:"俄式宽体",
+   desc:"苏联/俄罗斯最后的宽体旗舰：伊尔-86的深度改进，四发远程、电传操纵，至今仍是俄罗斯政府专机队的主力平台。",
+   facts:["苏联首型<b>电传飞控</b>宽体客机","<b>俄罗斯总统专机</b>伊尔-96-300PU平台","四台PS-90<b>高涵道比</b>涡扇","产量不大，<b>服役至今</b>"]},
+  {n:"CRJ900",c:"Bombardier CRJ900",rlv:4,year:2001,type:"双发支线喷气客机",gen:"支线喷气",
+   desc:"加拿大庞巴迪的支线喷气招牌：CRJ700的加长版，90座级，北美通勤航线的常客，CRJ家族全球近2000架里的中坚力量。",
+   facts:["CRJ家族<b>主力型号</b>之一","90座级低油耗，<b>通勤利器</b>","北美支线网络<b>绝对主力</b>","CRJ系列累计交付<b>近2000架</b>"]},
+  {n:"E190",c:"Embraer E190",rlv:4,year:2004,type:"双发支线喷气客机",gen:"巴西力量",
+   desc:"巴西航空工业的代表作：100座级支线喷气，2+2四并排宽客舱打破支线机惯例，中国天津航空等多家航司也曾批量运营。",
+   facts:["巴航工业<b>E-Jets</b>家族核心型号","支线机少见的<b>2+2宽客舱</b>","全球交付<b>超500架</b>","中国多家航司<b>批量运营</b>"]},
+  {n:"湾流 G650",c:"Gulfstream G650",rlv:5,year:2009,type:"超远程公务机",gen:"公务机之王",
+   desc:"公务机的天花板：0.925马赫极速、1.3万公里直飞，机舱安静得像图书馆，是富豪榜的入场券，速度与航程双双封王。",
+   facts:["极速<b>0.925马赫</b>，公务机速度纪录","航程<b>1.3万公里级</b>，纽约直飞东京","巡航高度<b>15500米</b>，越过恶劣天气","机舱噪音<b>业界最低</b>级别"]},
+  {n:"猎鹰 7X",c:"Dassault Falcon 7X",rlv:5,year:2005,type:"三发超远程公务机",gen:"法式优雅",
+   desc:"达索的数字旗舰：公务机首次采用全电传操纵，全数字设计打造优雅三发布局，法国总统的专机正是猎鹰7X。",
+   facts:["公务机首次<b>全电传操纵</b>","完全<b>数字设计</b>（CATIA）打造","三发容错，<b>跨洋安全裕度</b>高","法国总统<b>专机</b>同款"]},
+  {n:"波音 737 MAX",c:"Boeing 737 MAX",rlv:6,year:2016,type:"双发窄体客机",gen:"四代窄体",
+   desc:"737家族的最新世代：LEAP发动机省油14%，却因MCAS系统缺陷两度坠机、全球停飞20个月，成为航空安全史上最昂贵的教训，整改后重回销量王座。",
+   facts:["配CFM <b>LEAP-1B</b>，油耗较上代降<b>14%</b>","<b>MCAS缺陷</b>致两起空难、全球停飞20个月","整改后仍是全球<b>交付量最大</b>机型之一","2023年起中国<b>恢复运营</b>"]},
+  {n:"图-144",c:"Tupolev Tu-144",rlv:7,year:1968,type:"超音速客机",gen:"超音速先驱",
+   desc:"比协和还早两个月上天的超音速客机：苏联图波列夫的极速传奇，以2马赫掠过云端，可惜命运多舛，只留下一段冷战时期的音爆回响。",
+   facts:["<b>1968年12月31日</b>首飞，比协和早两个月","世界首型<b>商用超音速客机</b>","1973年巴黎航展<b>坠机</b>后运势急转","退役后为NASA充当<b>超音速研究平台</b>"]},
+
+  /* ----- 无人机 ----- */
+  {n:"RQ-2 先锋",c:"RQ-2 Pioneer",rlv:2,year:1985,type:"侦察校射无人机",gen:"舰载侦察先驱",
+   desc:"美军现代无人机时代的开路者：从战列舰甲板用火箭助推起飞、拦阻网回收，海湾战争中让「侦察兵」第一次不必冒险抵近。",
+   facts:["从舰艇<b>火箭助推起飞</b>、拦阻网回收","海湾战争中执行<b>数百架次</b>侦察校射","光电/红外传感器，实时回传<b>战场画面</b>","由以色列「侦察兵」无人机<b>发展而来</b>"]},
+  {n:"RQ-11 大乌鸦",c:"RQ-11 Raven",rlv:2,year:2001,type:"手持侦察无人机",gen:"背包侦察",
+   desc:"扔上天就开机的巴掌级无人机：不到2公斤，单兵手抛起飞，阿富汗山地与全球热点上空最灵巧的一双眼睛。",
+   facts:["整机仅<b>1.9公斤</b>，单兵手抛起飞","续航约<b>80分钟</b>，遥控距离10公里级","装备美军班排级单位，<b>累计数万架</b>","拆解后装进<b>背包</b>随身携带"]},
+  {n:"RQ-7 影子",c:"RQ-7 Shadow",rlv:3,year:1999,type:"战术侦察无人机",gen:"旅级之眼",
+   desc:"美国陆军的「编制内之眼」：气压弹射器送上天、拦阻网接回家，把战场画面实时直播给旅级指挥官，机队累计飞行超百万小时。",
+   facts:["1999年赢得美陆军<b>TUAV竞标</b>","<b>气压弹射</b>起飞，拦阻网回收","机队累计飞行<b>超100万小时</b>","为炮兵校射与<b>指挥决策</b>实时直播"]},
+  {n:"扫描鹰",c:"ScanEagle",rlv:3,year:2002,type:"舰载侦察无人机",gen:"天钩回收",
+   desc:"波音与因斯图合造的小个子海燕：气动弹射起飞，全球独创的「天钩」悬臂在空中直接把它钩回，渔船甲板就能放飞回收。",
+   facts:["<b>「天钩」悬臂</b>钩住翼梢空中回收，全球独创","气动弹射发射，<b>商船甲板</b>即可使用","翼展3米，续航<b>20小时+</b>","远洋渔船借它<b>搜寻鱼群</b>"]},
+  {n:"哈洛普",c:"IAI Harop",rlv:3,year:2005,type:"反辐射巡飞弹",gen:"雷达猎手",
+   desc:"「雷达终结者」哈比的进化版：在反辐射导引头之外又装上光电双眼，雷达关机也能靠摄像头锁定目标，2020年纳卡战争里一战成名的巡飞弹明星。",
+   facts:["<b>反辐射+光电</b>双模导引头，雷达关机也能打","<b>人在回路</b>操控，可中途改换目标或中止攻击","2020年<b>纳卡战争</b>一战成名，与TB2并肩撕开防空网","印度、阿塞拜疆等<b>多国采购</b>","前身「哈比」是1995年首飞的<b>反辐射无人机鼻祖</b>"]},
+  {n:"MQ-1 捕食者",c:"MQ-1 Predator",rlv:4,year:1994,type:"察打一体无人机",gen:"察打一体开创",
+   desc:"把侦察与猎杀合二为一的开创者：先用镜头盯住目标，随后发射地狱火导弹——2001年阿富汗上空，「无人机战争」时代由此被定义。",
+   facts:["人类史上首款<b>察打一体</b>量产无人机","挂载<b>AGM-114地狱火</b>导弹","2001年阿富汗战场<b>一战成名</b>","继任者「死神」MQ-9即它的<b>放大版</b>"]},
+  {n:"苍鹭 TP",c:"IAI Heron TP",rlv:4,year:2006,type:"高空长航时无人机",gen:"高空长航时",
+   desc:"以色列高空长航时旗舰：翼展26米、可挂一吨载荷、留空30小时以上，像一只两层楼高的风筝，静静看穿整片战区。",
+   facts:["翼展<b>26米</b>，最大起飞重量5.67吨","续航<b>超30小时</b>，升限1.3万米","可挂<b>1吨级</b>侦察或武器载荷","德国等北约国家租用其<b>侦察服务</b>"]},
+  {n:"彩虹-4",c:"CH-4 UAV",rlv:4,year:2011,type:"察打一体无人机",gen:"中国察打主力",
+   desc:"中国彩虹家族的国际明星：察打一体、留空30小时以上，出口十余国，2015年在伊拉克战场完成实战首秀，与翼龙并列「中国无人机名片」。",
+   facts:["2011年9月首飞，彩虹家族<b>外销明星</b>","留空<b>30小时+</b>，航程3000公里级","挂载<b>AR-1导弹</b>，察打一体","2015年伊拉克战场<b>实战首秀</b>"]},
+  {n:"大疆 Mavic 3",c:"DJI Mavic 3",rlv:4,year:2021,type:"消费级航拍无人机",gen:"民用天花板",
+   desc:"把专业摄影棚搬上天空的中国名片：折叠后只有水瓶大小，哈苏镜头、46分钟续航——全球每卖出三台民用无人机，就有大疆的一台。",
+   facts:["全球民用无人机约<b>七成份额</b>来自大疆","折叠后<b>水瓶大小</b>，随身携带","哈苏主摄+<b>46分钟</b>续航","航拍、测绘、搜救的<b>民用天花板</b>"]},
+  {n:"MQ-9 死神",c:"MQ-9 Reaper",rlv:5,year:2001,type:"察打一体无人机",gen:"远程猎杀",
+   desc:"捕食者的重装继任者：更大、更高、更致命，地狱火与重磅炸弹组合挂载，从本土遥控即可执行万里之外的猎杀任务。",
+   facts:["可挂<b>地狱火+重磅炸弹</b>组合，火力凶悍","升限<b>1.5万米</b>，续航27小时以上","卫星链路遥控<b>跨洲际</b>作战","全球反恐战争的<b>标志性面孔</b>"]},
+  {n:"RQ-4 全球鹰",c:"RQ-4 Global Hawk",rlv:5,year:1998,type:"高空侦察无人机",gen:"战略之眼",
+   desc:"跨越大洲的无人之眼：翼展39.9米比737还宽，一次升空30余小时，从1.8万米高空把整片国土拍成高清地图。",
+   facts:["翼展<b>39.9米</b>，比波音737更宽","续航<b>34小时+</b>，航程2.2万公里","1.8万米高空<b>全天候</b>广域侦察","造价约<b>2亿美元</b>，比F-35还贵"]},
+  {n:"翼龙-2",c:"Wing Loong II",rlv:5,year:2017,type:"察打一体无人机",gen:"中空长航时",
+   desc:"中国翼龙家族巅峰之作：12个挂点、480公斤载荷、留空20小时级，海外客户一次下单就是百架级的明星出口装备。",
+   facts:["<b>12个外挂点</b>，载荷480公斤","留空<b>20小时级</b>，航程约4000公里","2018年起<b>批量出口</b>多国","卫星中继<b>超视距遥控</b>"]},
+  {n:"彩虹-5",c:"CH-5 UAV",rlv:5,year:2015,type:"察打一体无人机",gen:"重装彩虹",
+   desc:"彩虹家族的「重装版」：载荷翻倍、最长留空60小时，可与彩虹-3/4编组共享数据链，中国察打无人机体系的火力骨干。",
+   facts:["2015年8月首飞，留空最长<b>60小时</b>","可挂<b>16枚</b>导弹级载荷","与彩虹-3/4<b>协同组网</b>作战","2017年起<b>批量出口</b>并亮相防务展"]},
+  {n:"TB2 旗手",c:"Bayraktar TB2",rlv:5,year:2014,type:"察打一体无人机",gen:"小而致命",
+   desc:"土耳其的「小钢炮」：价格只有同类零头，却在2020年纳卡冲突中成建制打穿防空网，让全世界重新认识了便宜无人机的战争价值。",
+   facts:["单机价格仅<b>数百万美元</b>","纳卡战争中<b>摧毁数百个</b>装甲与炮位目标","挂载MAM-L<b>智能弹药</b>","出口<b>30余国</b>，含多个北约成员"]},
+  {n:"无侦-8",c:"WZ-8",rlv:6,year:2019,type:"高空高速侦察无人机",gen:"神秘幽灵",
+   desc:"国庆阅兵上惊鸿一瞥的黑色幽灵：由轰-6挂载到高空投放、据推测以火箭动力冲刺，以极高速度穿透防空网侦察，被军迷称为中国的「黑鸟」。",
+   facts:["由<b>轰-6挂载投放</b>后空中点火","据公开推测采用<b>火箭发动机</b>驱动","2019年<b>国庆阅兵</b>首次公开","专司<b>高空高速穿透侦察</b>，参数保密"]},
+  {n:"X-47B",c:"Northrop Grumman X-47B",rlv:6,year:2011,type:"舰载无人作战验证机",gen:"隐身无人机",
+   desc:"无人机史上的一座里程碑：第一架自己弹射起飞、自己着舰的隐身无人战机，蝙蝠翼一飞，把「无人」二字写进了航母甲板。",
+   facts:["2013年首次完成<b>航母弹射起飞</b>","2013年7月完成史上首次<b>无人机自主着舰</b>","2015年完成无人机<b>自主空中加油</b>对接","飞翼隐身布局，<b>无人作战</b>验证平台"]},
+  {n:"攻击-11",c:"GJ-11 Sharp Sword",rlv:6,year:2019,type:"隐身无人攻击机",gen:"隐身利刃",
+   desc:"中国版「飞翼幽灵」：国庆阅兵压轴登场的隐身无人攻击机，飞翼布局加内置弹舱，专为踹门开路而生的高危打击先锋。",
+   facts:["<b>2019年国庆阅兵</b>压轴亮相","验证机「利剑」2013年已<b>首飞</b>","飞翼隐身布局，<b>内置武器舱</b>","定位<b>隐身穿透打击</b>与有人无人协同"]},
+  {n:"MQ-25 黄貂鱼",c:"MQ-25 Stingray",rlv:6,year:2019,type:"舰载无人加油机",gen:"舰载无人加油",
+   desc:"全球首款隐身舰载无人加油机：从航母甲板起飞，在空中为F-35与超级大黄蜂机队输油，把舰载机的拳头多打出上千公里。",
+   facts:["世界首型<b>舰载无人加油机</b>","2019年9月T1试验机<b>首飞</b>","2021年完成史上首次<b>无人机自动加油</b>","设计输油量<b>6.8吨级</b>"]},
+  {n:"XQ-58A 女武神",c:"XQ-58A Valkyrie",rlv:6,year:2019,type:"隐身无人僚机验证机",gen:"忠诚僚机",
+   desc:"「忠诚僚机」的美国答卷：便宜、隐身、可消耗，火箭助推从轨道一窜而上，与有人战机并肩作战的AI僚机雏形。",
+   facts:["2019年3月<b>首飞</b>成功","<b>轨道火箭助推发射</b>，不依赖跑道","单机成本瞄准<b>数百万美元级</b>","已完成<b>AI自主飞行</b>与有人无人<b>编组</b>试验"]},
+  {n:"Zephyr 西风 S",c:"Airbus Zephyr S",rlv:7,year:2018,type:"太阳能高空伪卫星",gen:"永不着陆",
+   desc:"不烧一滴油的「伪卫星」：白昼靠太阳能爬升、夜间靠电池滑翔，2022年一口气连续飞了64天，离「永不着陆」只差一步之遥。",
+   facts:["2022年创<b>连续飞行64天</b>纪录","全机<b>太阳能+锂电池</b>，零燃油","翼展<b>25米</b>，体重仅<b>几十公斤</b>","在2万米高空充当<b>廉价伪卫星</b>"]},
+  ];
+
+/* ================= 隐藏卡 ================= */
+const NOTPLANE = [
+  {n:"绯雪",c:"Hiyuki",silver:true,year:2026,type:"游戏角色（鸣潮）",gen:"拉海洛",
+   desc:"她是《鸣潮》的5星冷凝角色绯雪——来自苇原的灼樱巫女，以铃为引窥见未来的可能性。银发红瞳的她明明是冰属性，名字里却燃着一场绯红的雪。她也是本项目制作者之一的头像。",
+   facts:["本卡为<b>本项目制作者之一</b>的头像","《鸣潮》5星<b>冷凝</b>角色，2026年4月30日上线","来自苇原的<b>灼樱巫女</b>，特别对策组唯一成员","异能力<b>「预求身」</b>：预取未来的力量为己所用","名字带「绯」，属性却是<b>冷凝</b>——冰与火的反差","【隐藏卡】抽中概率与红卡相同"]},
+{n:"兔子",c:"Rabbit",silver:true,year:2026,type:"兔耳少女（金榜题名）",gen:"应试锦鲤",
+   desc:"兔耳少女握着毛笔，在红幅上一笔写下金榜题名 ——黑框眼镜、元气满分，考场外的第一只锦鲤。考试季请到这位，祝你场场满意。与此同时，她也是本项目制作者之一的头像。",
+   facts:["本卡为<b>本项目制作者之一</b>的头像","<b>兔耳+黑框眼镜</b>的元气少女","红幅上写<b>「金榜题名」</b>：考试祈福","毛笔笔触刚落的<b>应试仪式感</b>","考场<b>吉祥物</b>，抽到即祝福"]},
+  {n:"星咲明里",c:"Hoshizaki Akari",silver:true,year:2018,type:"音游角色（O.N.G.E.K.I.）",gen:"音击世界",
+   desc:"她是 SEGA 街机音乐游戏《音击（O.N.G.E.K.I.）》的人气角色星咲明里——粉色短发、笑容元气的看板少女，梦想是成为顶尖的音击偶像。她也是本项目制作者之一的头像。",
+   facts:["本卡为<b>本项目制作者之一</b>的头像","《<b>音击 O.N.G.E.K.I.</b>》2018年由 SEGA 推出","<b>星咲明里</b>是游戏核心看板角色，粉发元气少女","街机音游，主打<b>偶像与音乐</b>主题","漂浮课桌椅的背景正是音击独特的<b>音乐空间</b>","【隐藏卡】抽中概率与红卡相同"]},
+  {n:"DeepSeek",c:"DeepSeek Logo",silver:true,year:2023,type:"AI 对话助手",gen:"人工智能时代",
+   desc:"蓝色鲸鱼游向深海——深度求索（DeepSeek），2023年成立的中国 AI 公司，2025年初以 R1 模型让全球 AI 圈地动山摇：开源、低价、推理能力比肩闭源旗舰。也是未来造飞机的好工具。",
+   facts:["2023年7月成立，<b>2025年1月 R1</b> 火遍全球","R1 以<b>约1/10成本</b>比肩闭源旗舰推理","坚持<b>开源</b>，推动「AI 平权」","蓝鲸标志呼应<b>「深度求索」</b>之名","未来造飞机的好工具"]},
+  {n:"ChatGPT",c:"ChatGPT Logo",silver:true,year:2022,type:"AI 对话助手",gen:"人工智能时代",
+   desc:"这是 ChatGPT 的品牌标识——OpenAI 于 2022 年推出的现象级 AI 对话助手。这个青绿方块里的白色交织标志（ChatGPT 图标）正代表 AI 时代的到来。它也是未来造飞机的好工具。",
+    facts:["<b>ChatGPT</b> 于 2022 年 11 月由 OpenAI 推出","上线仅<b>2 个月</b>月活破亿，史上最快","支持文本对话、代码生成、图像理解等<b>多模态能力</b>","它的绿色花朵图标已成为 AI 时代的文化符号","未来造飞机的好工具","【隐藏卡】抽中概率与红卡相同"]},
+  {n:"斗地主飞机",c:"Dou Dizhu Plane",silver:true,year:1990,type:"纸牌牌型（斗地主）",gen:"国民牌桌",
+   desc:"这是斗地主里最霸道的牌型——“飞机”：连续两组以上的三张牌，再带上同数量的翅膀。图中正是三个9、三个8、三个7的豪华编队，一出牌就叫全场安静。",
+   facts:["斗地主“飞机”=<b>连续两组以上三张</b>+等量单牌或对子","图中<b>999/888/777</b>正是三连组主体","带出去的单牌、对子俗称<b>“翅膀”</b>","斗地主1990年代兴起，如今是<b>国民级纸牌游戏</b>","【隐藏卡】抽中概率与红卡相同"]},
+  {n:"飞行棋",c:"Aeroplane Chess",silver:true,year:1980,type:"桌面游戏（飞行棋）",gen:"飞行桌游",
+   desc:"掷出 6 才能起飞，四色小飞机在棋盘上你追我赶——1980 年代开始风靡的飞行棋，是几代人最早的「飞行」记忆。",
+   facts:["掷出<b>6 才能起飞</b>，同色格<b>连跳</b>","被追尾会被<b>打回机库</b>重来","由国外 Ludo 演变，<b>1980年代</b>在中国流行","棋盘上的飞机，是一代人的<b>飞行启蒙</b>"]},
+  {n:"纸飞机",c:"Paper Plane",silver:true,year:1930,type:"折纸飞行器",gen:"童年飞行",
+   desc:"一张纸，对折、哈气、掷出——全班最默契的起飞仪式。它教会我们的不是飞得多远，而是：动手，就能上天。",
+   facts:["一页纸<b>无需工具</b>即可折叠","掷前<b>哈一口气</b>是神秘飞行仪式","世界纪录<b>88米级</b>（2022年）","最早无门槛的<b>空气动力学启蒙</b>"]},
+  {n:"风筝",c:"Chinese Kite",silver:true,year:-500,type:"传统风筝",gen:"蓝天之鸟",
+   desc:"相传两千多年前，墨子以木头制成木鸢，飞上了鲁山的风——那是中国人最早的「航空器」。今天蓝天上盘旋的每只风筝，都还在续写那个起飞梦。",
+   facts:["相传<b>墨子木鸢</b>，最早的飞行器雏形","唐代以后<b>纸糊风筝</b>飞入寻常人家","潍坊国际风筝节是<b>国家级非遗</b>名片","中国人两千多年前的「航天梦」"]},
+  {n:"热气球",c:"Hot Air Balloon",silver:true,year:1783,type:"载人升空器",gen:"蓝天先驱",
+   desc:"1783年，法国的蒙戈尔费兄弟让一只巨大的彩球升上巴黎天空——人类第一次挣脱地面的束缚。如今蓝天下的彩色热气球，仍在用最浪漫的方式践行飞翔的初心。",
+   facts:["<b>1783年</b>蒙戈尔费兄弟首次热气球载人升空","原理：加热球内空气使其<b>密度变小</b>产生浮力","最早的试验乘客是<b>羊、鸭、公鸡</b>三只动物","热气球<b>随风而行</b>，无动力全凭气流","【隐藏卡】抽中概率与红卡相同"]},
+  {n:"平面",c:"Plane",silver:true,year:-300,type:"数学概念（几何）",gen:"欧几里得空间",
+   desc:"这是立体几何里的平面公理图——平面 α、直线 l、点 A 和 B。它和飞机是同一个英文单词：plane。所以，数学课上的它当然也算「plane」。",
+   facts:["英语 <b>plane</b> 同时指「平面」与「飞机」","公理：直线上两点在平面内，则<b>整条直线在此平面内</b>","公理：不共线<b>三点确定一个平面</b>","平面<b>无限延展、没有厚度</b>","数学与航空共享同一个 plane"]},
+  {n:"火车",c:"Railway Train",silver:true,year:2007,type:"普速列车（绿皮车）",gen:"地面交通",
+   desc:"这是行驶在乡野暮光里的普速列车——HXD3电力机车牵引着一列25G绿皮车厢，慢腾腾碾过独属于普速出行的温柔时光。",
+    facts:["牵引机车<b>HXD3</b>：7200kW交流传动电力机车","车厢为<b>25G型</b>「绿皮车」，K字头列车标配","高铁网之外的<b>毛细血管</b>，深入县域乡镇","图中为<b>黄昏时分</b>穿越农田的普速列车","【隐藏卡】抽中概率与红卡相同"]},
+  {n:"火箭",c:"Rocket",silver:true,year:1926,type:"运载火箭",gen:"飞向太空",
+   desc:"发动机喷出白亮强光，两枚固体助推器正脱离箭体——这是助推器分离瞬间的重型运载火箭。从戈达德的第一枚液体火箭到今天的长征系列，人类正是靠一次次燃烧把自己推向星空。",
+   facts:["<b>1926年</b>戈达德发射人类首枚液体火箭","推进原理：<b>牛顿第三定律</b>（作用力与反作用）","多级火箭<b>逐级分离</b>，甩掉自重轻装上阵","图中<b>助推器分离</b>是重型火箭标志性动作","中国的<b>长征系列</b>运载火箭自1970年起步"]},
+  {n:"太空电梯",c:"Space Elevator",silver:true,year:2058,type:"科幻工程（《流浪地球2》）",gen:"连接天地",
+   desc:"《流浪地球2》里从地表直插近地轨道的太空电梯——银灰色主轨穿越云层，环形空间站与太阳能帆板在俯瞰视角下延伸至深空。它是人类「用电梯上太空」的世纪梦想，最早由航天之父齐奥尔科夫斯基于1895年提出。",
+   facts:["概念最早由<b>齐奥尔科夫斯基</b>1895年提出","《流浪地球2》中<b>2058年</b>的太空电梯奇观","现实难关：需要<b>超高强度</b>缆绳材料（碳纳米管级）","建成后进入太空成本可<b>降低一个数量级</b>","被称为<b>「通向太空的天梯」</b>","【隐藏卡】抽中概率与红卡相同"]},
+  {n:"南昌航空大学",c:"Nanchang Hangkong University",silver:true,q:true,year:1952,type:"大学（母校）",gen:"航空报国",
+   desc:"「南昌航空大学」六个金色大字映着校门后陈列的退役战机——这所1952年创办的英雄城学府，是初教-5、强-5、L-15 猎鹰等南昌造飞机的共同摇篮，也是本项目三位作者共同的母校。这张卡永远压轴出场。",
+   facts:["<b>1952年</b>创办，坐落于<b>英雄城南昌</b>","校门内陈列<b>退役战机</b>","校机<b>初教-5、强-5、L-15 猎鹰</b>均为南昌造","中国航空工业的<b>骨干高校</b>","三位制作者的母校——<b>永远压轴</b>"]},
+  ];
+
+/* 全部卡池（飞机+隐藏卡），用于图鉴与统计 */
+const ALLCARDS = PLACE.concat(NOTPLANE);
+
+/* 为所有卡分配唯一编号（图片文件名与图鉴收集） */
+PLACE.forEach(function(p,i){ p.id=i; });
+NOTPLANE.forEach(function(p,i){ p.id=170+i; });
+
+/* ================= 权重与保底 ================= */
+const WEIGHT = [40, 27, 16, 9.5, 5, 2.2, 0.9, 0.35];
+const SILVER_W = 0.9;      // 隐藏卡权重 = 红卡权重
+const QW = WEIGHT[7]/(PLACE.filter(function(p){return p.rlv===7;}).length)/5;
+const PIT_LEVEL = 4;       // 十连保底：至少一张紫及以上
+const WEIGHT_TOTAL = WEIGHT.reduce(function(a,b){return a+b;},0) + SILVER_W + QW;
+const SILVER_RATE = SILVER_W / WEIGHT_TOTAL;
+const QRATE = QW / WEIGHT_TOTAL;
+
+/* ========== 本地存档 ========== */
+const SAVE_KEY = "ace_hangar_save_v6";
+let save = {collected:{}, total:0, best:-1};
+function loadSave(){ try{ const d=JSON.parse(localStorage.getItem(SAVE_KEY)); if(d&&d.collected) save=d; }catch(e){ save={collected:{},total:0,best:-1}; } }
+function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+
+/* ========== 星空背景 ========== */
+(function(){
+  const s=document.getElementById("stars");
+  for(let i=0;i<70;i++){
+    const d=document.createElement("span");d.className="star";
+    const sz=(Math.random()*2+1);
+    d.style.width=sz+"px";d.style.height=sz+"px";
+    d.style.left=Math.random()*100+"%";d.style.top=Math.random()*100+"%";
+    d.style.animationDelay=(Math.random()*4)+"s";
+    s.appendChild(d);
+  }
+})();
+
+/* ========== SVG 剪影（图片加载失败降级） ========== */
+function planeSVG(w){
+  w=w||84;
+  return '<svg class="plane-svg" viewBox="0 0 100 100" width="'+w+'" height="'+w+'" style="max-width:'+w+'px">'+
+    '<g fill="#ffffff"><path d="M6 44 L50 35 L50 14 L57 12 L57 30 L93 40 L93 46 L57 52 L57 88 L50 86 L50 58 L6 56 Z"/></g>'+
+    '<circle cx="28" cy="42" r="6" fill="rgba(0,0,0,.25)"/></svg>';
+}
+document.getElementById("gacha").innerHTML=planeSVG(150);
+
+/* 卡牌图片地址：飞机=透明PNG叠稀有度色块；隐藏卡=原始图片 */
+function cardImg(p){ return p.silver ? "planes/plane_"+p.id+".jpg" : "planes/plane_"+p.id+".png"; }
+/* 真实照片地址（详情页切换用） */
+function realImg(p){ return "planes_real/plane_"+p.id+".jpg"; }
+
+/* ========== 抽卡逻辑 ========== */
+function pickRarity(){
+  const total=WEIGHT.reduce(function(a,b){return a+b;},0);
+  let r=Math.random()*total;
+  for(let i=0;i<WEIGHT.length;i++){ r-=WEIGHT[i]; if(r<=0) return i; }
+  return WEIGHT.length-1;
+}
+function planeOf(rlv){
+  const pool=PLACE.filter(function(p){return p.rlv===rlv;});
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function silverOf(){
+  const pool=NOTPLANE.filter(function(p){return !p.q;});
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function drawTen(){
+  const result=[];
+  for(let i=0;i<10;i++){
+    if(Math.random()<QRATE){
+      result.push(NOTPLANE[NOTPLANE.length-1]);
+    }else if(Math.random()<SILVER_RATE){
+      result.push(silverOf());           // 隐藏卡：概率≈红卡
+    }else{
+      result.push(planeOf(pickRarity())); // 飞机：按稀有度权重
+    }
+  }
+  // 十连保底：至少一张紫及以上（隐藏卡不计）
+  const planes=result.filter(function(p){return !p.silver;});
+  let best=0;
+  if(planes.length){ best=Math.max.apply(null,planes.map(function(p){return p.rlv;})); }
+  if(best<PIT_LEVEL){
+    if(planes.length){
+      let gi=result.findIndex(function(p){return p&&p.rlv===0;});
+      const idx=gi>=0?gi:result.findIndex(function(p){return !p.silver;});
+      result[idx]=planeOf(PIT_LEVEL);
+    }else{
+      result[0]=planeOf(PIT_LEVEL);
+    }
+  }
+  return result;
+}
+
+/* ========== 渲染 ========== */
+function $(s){return document.querySelector(s);}
+
+function cardName(p){ return p.n; }
+
+function renderResult(result){
+  const box=$("#cards");
+  box.innerHTML="";
+  const planes=result.filter(function(p){return !p.silver;});
+  const best=planes.length?Math.max.apply(null,planes.map(function(p){return p.rlv;})):-1;
+  const silverCount=result.length-planes.length;
+  let info="";
+  if(best>=0){
+    info="本十连最高："+RLV[best].name+(best>=5?" · 欧气爆棚":"");
+     if(silverCount>0) info+=" ｜ 隐藏卡×"+silverCount+"";
+  }else{
+    info="全是隐藏卡？！运气爆棚×"+silverCount;
+  }
+  $("#resInfo").textContent=info;
+  result.forEach(function(p,i){
+    const d=document.createElement("div");
+    const cls = p.silver ? ("card silver"+(p.q?" q":"")) : (p.school ? "card school" : "card r"+p.rlv);
+    d.className=cls;
+    const rlv=RLV[p.rlv]||{color:["#94a3b8","#475569"],glow:"#cbd5e1"};
+    d.style.setProperty("--c1",rlv.color[0]);
+    d.style.setProperty("--c2",rlv.color[1]);
+    d.style.setProperty("--glow",rlv.glow);
+    d.style.animationDelay=(i*0.07)+"s";
+    let tag='<div class="ptag">'+p.gen+'</div>';
+    if(p.school) tag='<div class="schtag">★ 南航之光 ★</div>';
+    d.innerHTML='<div class="inner">'+
+      '<span class="rlv">'+(p.q?"真·隐藏":(p.silver?"隐藏":(p.school?"天蓝·校机":rlv.name)))+'</span><span class="yr">'+p.year+'</span>'+
+      '<div class="pic"><img src="'+cardImg(p)+'" alt="'+p.n+'" onerror="this.outerHTML=planeSVG(92)"></div>'+
+      '<div class="pname">'+p.n+'</div>'+
+      '<div class="pcode">'+p.c+'</div>'+tag+
+      '</div>';
+    d.addEventListener("click",function(){openModal(p);});
+    box.appendChild(d);
+  });
+  result.forEach(function(p){ save.collected[p.id]=true; });
+  save.total+=result.length;
+  if(best>save.best) save.best=best;
+  persist();
+  updateStats();
+}
+
+function updateStats(){
+  const have=Object.keys(save.collected).length;
+  const silverGot=NOTPLANE.filter(function(p){return !!save.collected[p.id];}).length;
+  const totalShown=PLACE.length+silverGot;
+  $("#stTotal").textContent=save.total;
+  $("#stColl").textContent=have+" / "+totalShown;
+  $("#collSub").textContent="已收集 "+have+" / "+totalShown;
+  $("#stBest").textContent=save.best>=0?RLV[save.best].name:"—";
+  $("#prog").style.width=(have/totalShown*100)+"%";
+  renderCollection();
+}
+
+/* ========== 图鉴 ========== */
+function renderCollection(){
+  const g=$("#colGrid"); g.innerHTML="";
+  // 按真实稀有度排序：灰→彩，隐藏卡最后（同稀有度保持原顺序）
+  ALLCARDS.slice().sort(function(a,b){
+    if(a.silver && b.silver) return 0;
+    if(a.silver) return 1;
+    if(b.silver) return -1;
+    return (a.rlv||0)-(b.rlv||0);
+  }).forEach(function(p){
+    const owned=!!save.collected[p.id];
+    if(p.silver && !owned) return;
+    const rlv=RLV[p.rlv]||(p.q?{name:"隐藏",color:["#f7de8a","#141414"]}:{name:"隐藏",color:["#e2e8f0","#64748b"]});
+    const d=document.createElement("div");
+    d.className="col-item"+(owned?"":" locked");
+    d.style.setProperty("--rc1",rlv.color[0]);
+    d.style.setProperty("--rc2",rlv.color[1]);
+    let star='';
+    if(p.school) star='<span class="schstar">★</span>';
+    if(p.silver) star='<span class="silstar'+(p.q?' qs':'')+'">'+(p.q?'◆':'◇')+'</span>';
+    d.innerHTML='<div class="cs">'+
+      (owned?'<img src="'+cardImg(p)+'" alt="'+p.n+'" onerror="this.outerHTML=planeSVG(48)">':planeSVG(48))+
+      star+'</div>'+
+      '<div class="cn">'+(owned?p.n:"？？？")+'</div>'+
+      '<div class="cc">'+(p.q?"真·隐藏":(p.silver?"隐藏":(p.school?"天蓝·校机":rlv.name)))+' · '+p.year+'</div>';
+    if(owned) d.addEventListener("click",function(){openModal(p);});
+    g.appendChild(d);
+  });
+}
+
+/* ========== 科普详情弹窗 ========== */
+let modalCard=null, modalReal=false;
+function setModalPic(){
+  const p=modalCard; if(!p) return;
+  const mp=$("#mPic");
+  if(modalReal){
+    mp.classList.add("real");
+    mp.style.background="#0a0f24";
+    mp.innerHTML='<img src="'+realImg(p)+'" alt="'+p.n+'" onerror="this.outerHTML=planeSVG(160)">';
+  }else{
+    mp.classList.remove("real");
+    const rlv=RLV[p.rlv]||{color:["#e2e8f0","#64748b"]};
+    if(p.q){ mp.style.background="linear-gradient(160deg,#141414,#2b2415)"; }
+    else if(p.silver){ mp.style.background="linear-gradient(160deg,#f8fafc,#94a3b8)"; }
+    else if(p.school){ mp.style.background="linear-gradient(160deg,#7dd3fc,#0ea5e9 55%,#075985)"; }
+    else if(p.rlv===7){ mp.style.background="linear-gradient(160deg,#ff6ec7,#7c3aed 45%,#0ea5e9)"; }
+    else { mp.style.background="linear-gradient(160deg,"+rlv.color[0]+","+rlv.color[1]+")"; }
+    mp.innerHTML='<img src="'+cardImg(p)+'" alt="'+p.n+'" onerror="this.outerHTML=planeSVG(160)">';
+  }
+  const bi=$("#btnIllu"), br=$("#btnReal");
+  if(bi&&br){
+    bi.className="mt-btn"+(modalReal?"":" on");
+    br.className="mt-btn"+(modalReal?" on":"");
+  }
+}
+function openModal(p){
+  modalCard=p; modalReal=false;
+  const rlv=RLV[p.rlv]||{glow:"#cbd5e1",color:["#e2e8f0","#64748b"]};
+  const trow=$("#mToggle");
+  if(p.silver){ trow.style.display="none"; trow.innerHTML=""; }
+  else{
+    trow.style.display="flex";
+    trow.innerHTML='<button id="btnIllu" class="mt-btn on">插画立绘</button><button id="btnReal" class="mt-btn">真实照片</button>';
+    $("#btnIllu").addEventListener("click",function(){ modalReal=false; setModalPic(); });
+    $("#btnReal").addEventListener("click",function(){ modalReal=true; setModalPic(); });
+  }
+  setModalPic();
+  $("#mOpen").innerHTML='<div><h3>'+p.n+'</h3><div class="code">'+p.c+' · '+(p.year?("首飞/诞生 "+p.year):"")+'</div></div>';
+  let badges='';
+  if(p.q){
+    badges='<span class="b qsilb">◆ 真·隐藏 ◆</span><span class="b genb">'+p.gen+'</span>';
+  }else if(p.silver){
+    badges='<span class="b silb">隐藏</span><span class="b genb">'+p.gen+'</span>';
+  }else if(p.school){
+    badges+='<span class="b schb">★ 天蓝 · 南昌航空大学校机 ★</span><span class="b genb">'+p.gen+'</span>'+
+            '<span class="b rlvb" style="--glow:'+rlv.glow+'">真实技术等级：'+rlv.name+'（按此概率出现）</span>';
+  }else{
+    badges+='<span class="b rlvb" style="--glow:'+rlv.glow+'">'+rlv.name+'级稀有度</span><span class="b genb">'+p.gen+'</span>';
+  }
+  $("#mBadges").innerHTML=badges;
+  $("#mMeta").innerHTML=
+    '<div class="mi"><span>机型定位</span><b>'+p.type+'</b></div>'+
+    '<div class="mi"><span>技术代际</span><b>'+p.gen+'</b></div>'+
+    '<div class="mi"><span>'+(p.silver?"出现时间":"首飞年份")+'</span><b>'+p.year+' 年</b></div>'+
+    '<div class="mi"><span>'+(p.silver?'卡牌类型':'稀有度')+'</span><b style="color:'+(p.q?'#f7de8a':rlv.glow)+'">'+(p.q?'真·隐藏':(p.silver?'隐藏':(p.school?"天蓝·校机（真实"+rlv.name+"级）":rlv.name)))+'</b></div>';
+  $("#mDesc").textContent=p.desc;
+  $("#mFacts").innerHTML='<h4>✈ '+(p.silver?'隐藏卡科普':'航空科普')+'</h4><ul>'+
+    (p.facts||[]).map(function(f){return '<li>'+f+'</li>';}).join('')+'</ul>';
+  $("#modal").classList.add("show");
+}
+$("#modalClose").addEventListener("click",function(){$("#modal").classList.remove("show");});
+$("#modal").addEventListener("click",function(e){ if(e.target.id==="modal") $("#modal").classList.remove("show"); });
+
+let eMode=false;
+document.addEventListener("keydown",function(e){
+  if((e.key==="q"||e.key==="Q") && !e.ctrlKey && !e.altKey && !e.metaKey){
+    const t=e.target&&e.target.tagName;
+    if(t==="INPUT"||t==="TEXTAREA") return;
+    eMode=!eMode;
+  }
+});
+function pickFrom(pool){ return pool[Math.floor(Math.random()*pool.length)]; }
+function eDraw(){
+  const mil=PLACE.filter(function(p){return p.id<100 && p.n!=="强-5";});
+  const civ=PLACE.filter(function(p){return p.id>=100 && p.id<150;});
+  const dr=PLACE.filter(function(p){return p.id>=150;});
+  const q5=PLACE.find(function(p){return p.n==="强-5";});
+  const result=[];
+  for(let i=0;i<7;i++) result.push(pickFrom(mil));
+  result.push(pickFrom(civ));
+  result.push(pickFrom(dr));
+  result.push(q5||pickFrom(mil));
+  return result;
+}
+
+/* ========== 抽卡触发 ========== */
+$("#btnDraw").addEventListener("click",function(){
+  const btn=$("#btnDraw"), box=$("#result");
+  btn.disabled=true;
+  const isE=eMode;
+  const result=isE?eDraw():drawTen();
+  if(isE){ eMode=false; }
+  box.style.display="none";
+  setTimeout(function(){
+    renderResult(result);
+    box.style.display="block";
+    /* 保持页面原地不动，结果区就在按钮下方 */
+    btn.disabled=false;
+  },120);
+});
+
+/* ========== 初始化 ========== */
+loadSave();
+if(!save.collected) save.collected={};
+updateStats();
+</script>
+</body>
+</html>

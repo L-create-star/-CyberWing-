@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 航空3D图鉴</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           管理后台 - 航空主题（与主站 index.html 统一配色变量）
+           ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-deep: #05070e;
+            --bg-panel: #0a0f1e;
+            --bg-card: #0d1526;
+            --aviation-secondary: #00e5ff;
+            --aviation-accent: #7b2dff;
+            --aviation-warning: #ffd60a;
+            --aviation-success: #00ff9d;
+            --aviation-danger: #ff2d6f;
+            --text-dim: #64748f;
+            --text-mid: #9fb3d1;
+            --text-bright: #e8f6ff;
+            --border-aviation: rgba(0, 229, 255, 0.20);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.50), 0 8px 32px rgba(0, 229, 255, 0.06);
+            --font-body: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(180deg, #05070e 0%, #0a0f1e 50%, #0d1526 100%);
+            color: var(--text-bright);
+            min-height: 100vh;
+        }
+
+        /* ── 顶栏 ── */
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            border-bottom: 1px solid var(--border-aviation);
+            background: rgba(8, 12, 24, 0.92);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            backdrop-filter: blur(8px);
+        }
+
+        .admin-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--text-bright);
+        }
+
+        .admin-title .accent { color: var(--aviation-secondary); }
+
+        .admin-header-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn {
+            font-family: var(--font-body);
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-aviation);
+            background: rgba(0, 229, 255, 0.06);
+            color: var(--text-bright);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover { border-color: var(--aviation-secondary); box-shadow: 0 0 12px rgba(0, 229, 255, 0.25); }
+
+        .btn.primary {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(123, 45, 255, 0.18));
+            border-color: var(--aviation-secondary);
+            font-weight: 600;
+        }
+
+        .btn.danger { border-color: rgba(255, 45, 111, 0.45); color: #ff8fb3; background: rgba(255, 45, 111, 0.08); }
+        .btn.danger:hover { box-shadow: 0 0 12px rgba(255, 45, 111, 0.30); border-color: var(--aviation-danger); }
+        .btn.ghost { background: transparent; border-color: rgba(159, 179, 209, 0.25); color: var(--text-mid); }
+        .btn.small { padding: 5px 10px; font-size: 12px; }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        /* ── 主区域 ── */
+        .admin-wrap { max-width: 1280px; margin: 0 auto; padding: 24px 28px 60px; }
+
+        /* ── 登录卡片 ── */
+        .login-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 14, 0.88);
+            backdrop-filter: blur(6px);
+        }
+
+        .login-card {
+            width: 380px;
+            padding: 36px 34px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-aviation);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .login-card h2 {
+            font-size: 19px;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            color: var(--text-bright);
+        }
+
+        .login-card .sub { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; letter-spacing: 1px; }
+
+        .field { margin-bottom: 16px; }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-mid);
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .field input, .field select, .field textarea {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(5, 7, 14, 0.75);
+            border: 1.5px solid var(--border-aviation);
+            border-radius: var(--radius-sm);
+            color: var(--text-bright);
+            font-size: 13px;
+            font-family: var(--font-body);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .field textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+        .field input:focus, .field select:focus, .field textarea:focus {
+            border-color: var(--aviation-secondary);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
+        }
+
+        .field select option { background: #0d1526; }
+
+        .login-error { color: var(--aviation-danger); font-size: 12px; min-height: 16px; margin: -6px 0 10px; }
+
+        /* ── 标签页 ── */
+        .admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-aviation); padding-bottom: 0; }
+
+        .admin-tab {
+            padding: 10px 22px;
+            font-size: 14px;
+            color: var(--text-mid);
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .admin-tab:hover { color: var(--text-bright); }
+
+        .admin-tab.active {
+            color: var(--text-bright);
+            background: rgba(0, 229, 255, 0.08);
+            border-color: var(--border-aviation);
+            position: relative;
+        }
+
+        .admin-tab.active::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: -1px;
+            height: 2px;
+            background: var(--aviation-secondary);
+            box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+        /* ── 工具栏 ── */
+        .panel-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .panel-toolbar .search-input {
+            flex: 1;
+            min-width: 220px;
+            max-width: 360px;
+            padding: 8px 14px;
+            background: rgba(5, 7, 14, 0.75);
+            border: 1.5px solid var(--border-aviation);
+            border-radius: var(--radius-sm);
+            color: var(--text-bright);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .panel-toolbar .search-input:focus { border-color: var(--aviation-secondary); }
+
+        .count-badge { font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+        .count-badge b { color: var(--aviation-secondary); }
+
+        /* ── 数据表 ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(13, 21, 38, 0.6);
+            border: 1px solid var(--border-aviation);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            text-align: left;
+            padding: 11px 14px;
+            background: rgba(0, 229, 255, 0.06);
+            color: var(--text-mid);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-aviation);
+            white-space: nowrap;
+        }
+
+        .data-table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.08);
+            color: var(--text-bright);
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr { transition: background 0.15s ease; }
+        .data-table tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+
+        .td-dim { color: var(--text-mid); font-size: 12px; }
+        .td-title { font-weight: 600; }
+        .td-preview { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-mid); }
+
+        .cat-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            font-size: 11px;
+            border: 1px solid var(--border-aviation);
+            border-radius: 20px;
+            color: var(--aviation-secondary);
+            background: rgba(0, 229, 255, 0.07);
+            white-space: nowrap;
+        }
+
+        .cat-tag.fighter { color: #ff8fb3; border-color: rgba(255, 45, 111, 0.4); background: rgba(255, 45, 111, 0.08); }
+        .cat-tag.airliner { color: #ffd60a; border-color: rgba(255, 214, 10, 0.35); background: rgba(255, 214, 10, 0.07); }
+        .cat-tag.transport { color: #00ff9d; border-color: rgba(0, 255, 157, 0.35); background: rgba(0, 255, 157, 0.07); }
+
+        .file-missing { color: var(--aviation-danger); font-size: 11px; }
+
+        .row-actions { display: flex; gap: 6px; white-space: nowrap; }
+
+        .empty-tip { text-align: center; padding: 46px 0; color: var(--text-dim); letter-spacing: 1px; }
+
+        /* ── 弹窗 ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 14, 0.85);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal-card {
+            width: 640px;
+            max-width: calc(100vw - 48px);
+            max-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border: 1px solid var(--border-aviation);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            animation: modalIn 0.22s ease;
+        }
+
+        @keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+        .modal-card.wide { width: 860px; }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border-aviation);
+        }
+
+        .modal-header h3 { font-size: 15px; letter-spacing: 1.5px; color: var(--text-bright); }
+
+        .modal-close {
+            width: 28px; height: 28px;
+            border: 1px solid var(--border-aviation);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-mid);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover { color: var(--aviation-danger); border-color: var(--aviation-danger); }
+
+        .modal-body { padding: 20px 22px; overflow-y: auto; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+        .form-grid .full { grid-column: 1 / -1; }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 14px 22px;
+            border-top: 1px solid var(--border-aviation);
+        }
+
+        .opt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
+        .opt-row input[type="radio"] { accent-color: var(--aviation-secondary); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+
+        .opt-row input[type="text"] {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(5, 7, 14, 0.75);
+            border: 1.5px solid var(--border-aviation);
+            border-radius: var(--radius-sm);
+            color: var(--text-bright);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .opt-row input[type="text"].is-answer { border-color: var(--aviation-success); box-shadow: 0 0 8px rgba(0, 255, 157, 0.25); }
+
+        .opt-label { font-size: 12px; color: var(--text-mid); width: 74px; flex-shrink: 0; }
+
+        .file-drop {
+            border: 1.5px dashed var(--border-aviation);
+            border-radius: var(--radius-md);
+            padding: 22px;
+            text-align: center;
+            color: var(--text-mid);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-drop:hover, .file-drop.dragover { border-color: var(--aviation-secondary); background: rgba(0, 229, 255, 0.05); color: var(--text-bright); }
+        .file-drop .fname { color: var(--aviation-secondary); font-weight: 600; }
+
+        .hint-text { font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+
+        /* ── Toast ── */
+        #toast-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            border: 1px solid var(--border-aviation);
+            background: rgba(13, 21, 38, 0.95);
+            color: var(--text-bright);
+            box-shadow: var(--shadow-md);
+            animation: toastIn 0.25s ease;
+        }
+
+        .toast.ok { border-color: rgba(0, 255, 157, 0.5); }
+        .toast.err { border-color: rgba(255, 45, 111, 0.5); }
+
+        @keyframes toastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+    </style>
+</head>
+
+<body>
+    <!-- ═══ 顶栏 ═══ -->
+    <div class="admin-header">
+        <div class="admin-title">◆ 航空3D图鉴 <span class="accent">// ADMIN_CONSOLE</span></div>
+        <div class="admin-header-actions" id="header-actions" style="display:none;">
+            <a class="btn ghost" href="/" target="_blank">↗ 返回前台</a>
+            <button class="btn ghost" onclick="adminLogout()">退出登录</button>
+        </div>
+    </div>
+
+    <!-- ═══ 登录遮罩 ═══ -->
+    <div class="login-mask" id="login-mask">
+        <div class="login-card">
+            <h2>◆ 管理后台登录</h2>
+            <div class="sub">AVIATION 3D ATLAS · ADMIN LOGIN</div>
+            <div class="field">
+                <label>用户名</label>
+                <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+            </div>
+            <div class="field">
+                <label>密码</label>
+                <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="login-error" id="login-error"></div>
+            <button class="btn primary" style="width:100%;" onclick="adminLogin()" id="login-btn">登录</button>
+        </div>
+    </div>
+
+    <!-- ═══ 主区域 ═══ -->
+    <div class="admin-wrap">
+        <div class="admin-tabs">
+            <div class="admin-tab active" data-tab="models" onclick="switchTab('models')">🛩 3D模型管理</div>
+            <div class="admin-tab" data-tab="knowledge" onclick="switchTab('knowledge')">📚 资料库管理</div>
+            <div class="admin-tab" data-tab="questions" onclick="switchTab('questions')">🏆 题库管理</div>
+        </div>
+
+        <!-- ── 模型管理 ── -->
+        <div class="tab-panel active" id="panel-models">
+            <div class="panel-toolbar">
+                <input type="text" class="search-input" id="models-search" placeholder="搜索模型名称 / 文件名..." oninput="renderModels()">
+                <span class="count-badge" id="models-count"></span>
+                <button class="btn primary" onclick="openModelUpload()">＋ 上传新模型</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:46px;">ID</th>
+                        <th>显示名称</th>
+                        <th>文件名</th>
+                        <th>类型</th>
+                        <th>大小</th>
+                        <th>国家</th>
+                        <th style="width:150px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="models-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- ── 资料库管理 ── -->
+        <div class="tab-panel" id="panel-knowledge">
+            <div class="panel-toolbar">
+                <input type="text" class="search-input" id="kb-search" placeholder="搜索知识条目标题 / 内容..." oninput="renderKnowledge()">
+                <span class="count-badge" id="kb-count"></span>
+                <button class="btn primary" onclick="openKBEditor(null)">＋ 新增知识条目</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">ID</th>
+                        <th style="width:130px;">分类</th>
+                        <th>标题</th>
+                        <th>内容预览</th>
+                        <th style="width:150px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="kb-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- ── 题库管理 ── -->
+        <div class="tab-panel" id="panel-questions">
+            <div class="panel-toolbar">
+                <input type="text" class="search-input" id="q-search" placeholder="搜索题干 / 选项..." oninput="renderQuestions()">
+                <span class="count-badge" id="q-count"></span>
+                <button class="btn primary" onclick="openQEditor(null)">＋ 新增题目</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:64px;">ID</th>
+                        <th style="width:130px;">分类</th>
+                        <th>题干</th>
+                        <th style="width:200px;">正确答案</th>
+                        <th style="width:150px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="q-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══ 模型上传弹窗 ═══ -->
+    <div class="modal-overlay" id="modal-model-upload">
+        <div class="modal-card wide">
+            <div class="modal-header">
+                <h3>◆ 上传新 3D 模型</h3>
+                <button class="modal-close" onclick="closeModal('modal-model-upload')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-drop" id="file-drop" onclick="document.getElementById('model-file').click()">
+                    点击选择或拖入 <b>.glb / .gltf</b> 模型文件
+                    <div class="hint-text" id="file-drop-name">尚未选择文件</div>
+                </div>
+                <input type="file" id="model-file" accept=".glb,.gltf" style="display:none" onchange="onFilePicked()">
+                <div class="form-grid" style="margin-top:16px;">
+                    <div class="field">
+                        <label>显示名称 *</label>
+                        <input type="text" id="mu-display-name" placeholder="如：Boeing 737-800">
+                    </div>
+                    <div class="field">
+                        <label>机型类型 *</label>
+                        <select id="mu-category">
+                            <option value="fighter">战斗机 Fighter</option>
+                            <option value="airliner">客机 Airliner</option>
+                            <option value="transport">运输机 Transport</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>完整名称</label>
+                        <input type="text" id="mu-full-name" placeholder="如：Boeing 737-8 MAX">
+                    </div>
+                    <div class="field">
+                        <label>国家 / 制造商</label>
+                        <input type="text" id="mu-country" placeholder="如：美国 波音">
+                    </div>
+                    <div class="field">
+                        <label>服役年代</label>
+                        <input type="text" id="mu-service-period" placeholder="如：1967-至今">
+                    </div>
+                    <div class="field">
+                        <label>比例</label>
+                        <input type="text" id="mu-scale-ratio" placeholder="如：1:100">
+                    </div>
+                    <div class="field full">
+                        <label>用途说明</label>
+                        <textarea id="mu-usage-desc" placeholder="中短程窄体客机..."></textarea>
+                    </div>
+                    <div class="field">
+                        <label>真实翼展 (m)</label>
+                        <input type="number" id="mu-real-wingspan" step="0.01" placeholder="35.8">
+                    </div>
+                    <div class="field">
+                        <label>真实长度 (m)</label>
+                        <input type="number" id="mu-real-length" step="0.01" placeholder="39.5">
+                    </div>
+                </div>
+                <div class="hint-text">物理参数（重量/滑翔/风阻/弹性）将按机型类型自动填入默认值，可在编辑中修改。</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="closeModal('modal-model-upload')">取消</button>
+                <button class="btn primary" onclick="submitModelUpload()">上传并保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 模型元数据编辑弹窗 ═══ -->
+    <div class="modal-overlay" id="modal-model-edit">
+        <div class="modal-card wide">
+            <div class="modal-header">
+                <h3>◆ 编辑模型信息 <span id="me-title" style="color:var(--aviation-secondary);"></span></h3>
+                <button class="modal-close" onclick="closeModal('modal-model-edit')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="field"><label>显示名称</label><input type="text" id="me-display-name"></div>
+                    <div class="field"><label>机型类型</label>
+                        <select id="me-category">
+                            <option value="fighter">战斗机 Fighter</option>
+                            <option value="airliner">客机 Airliner</option>
+                            <option value="transport">运输机 Transport</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>完整名称</label><input type="text" id="me-full-name"></div>
+                    <div class="field"><label>国家 / 制造商</label><input type="text" id="me-country"></div>
+                    <div class="field"><label>服役年代</label><input type="text" id="me-service-period"></div>
+                    <div class="field"><label>比例</label><input type="text" id="me-scale-ratio"></div>
+                    <div class="field full"><label>用途说明</label><textarea id="me-usage-desc"></textarea></div>
+                    <div class="field"><label>真实翼展 (m)</label><input type="number" step="0.01" id="me-real-wingspan"></div>
+                    <div class="field"><label>真实长度 (m)</label><input type="number" step="0.01" id="me-real-length"></div>
+                    <div class="field"><label>重量系数</label><input type="number" step="0.01" id="me-weight"></div>
+                    <div class="field"><label>滑翔系数</label><input type="number" step="0.01" id="me-glide_coe"></div>
+                    <div class="field"><label>风阻系数</label><input type="number" step="0.01" id="me-wind_coe"></div>
+                    <div class="field"><label>弹性系数</label><input type="number" step="0.01" id="me-bounce"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="closeModal('modal-model-edit')">取消</button>
+                <button class="btn primary" onclick="submitModelEdit()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 知识条目编辑弹窗 ═══ -->
+    <div class="modal-overlay" id="modal-kb-edit">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>◆ <span id="kb-modal-title">新增知识条目</span></h3>
+                <button class="modal-close" onclick="closeModal('modal-kb-edit')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="field">
+                        <label>分类 *</label>
+                        <select id="ke-category"></select>
+                    </div>
+                    <div class="field">
+                        <label>来源</label>
+                        <input type="text" id="ke-source" placeholder="如：波音官网 (boeing.com)">
+                    </div>
+                    <div class="field full">
+                        <label>标题 *</label>
+                        <input type="text" id="ke-title" placeholder="如：波音737系列发展概述">
+                    </div>
+                    <div class="field full">
+                        <label>内容 *</label>
+                        <textarea id="ke-content" style="min-height:160px;" placeholder="知识正文..."></textarea>
+                    </div>
+                    <div class="field full">
+                        <label>关键词（逗号分隔）</label>
+                        <input type="text" id="ke-keywords" placeholder="波音, 737, 窄体客机">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="closeModal('modal-kb-edit')">取消</button>
+                <button class="btn primary" onclick="submitKBEditor()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 题目编辑弹窗 ═══ -->
+    <div class="modal-overlay" id="modal-q-edit">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>◆ <span id="q-modal-title">新增题目</span></h3>
+                <button class="modal-close" onclick="closeModal('modal-q-edit')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="field">
+                        <label>分类 *</label>
+                        <select id="qe-category"></select>
+                    </div>
+                    <div class="field">
+                        <label>关联知识点</label>
+                        <select id="qe-kb-id"><option value="">（不关联）</option></select>
+                    </div>
+                    <div class="field full">
+                        <label>题干 *</label>
+                        <textarea id="qe-question" style="min-height:64px;" placeholder="输入题目..."></textarea>
+                    </div>
+                </div>
+                <div style="margin-bottom:6px;">
+                    <label style="font-size:12px;color:var(--text-mid);letter-spacing:1px;">选项（勾选正确答案） *</label>
+                </div>
+                <div class="opt-row">
+                    <span class="opt-label">正确答案</span>
+                    <input type="radio" name="qe-answer" value="0" checked>
+                    <input type="text" id="qe-opt-0" placeholder="选项 A">
+                </div>
+                <div class="opt-row">
+                    <span class="opt-label"></span>
+                    <input type="radio" name="qe-answer" value="1">
+                    <input type="text" id="qe-opt-1" placeholder="选项 B">
+                </div>
+                <div class="opt-row">
+                    <span class="opt-label"></span>
+                    <input type="radio" name="qe-answer" value="2">
+                    <input type="text" id="qe-opt-2" placeholder="选项 C">
+                </div>
+                <div class="opt-row">
+                    <span class="opt-label"></span>
+                    <input type="radio" name="qe-answer" value="3">
+                    <input type="text" id="qe-opt-3" placeholder="选项 D">
+                </div>
+                <div class="field full">
+                    <label>解析</label>
+                    <textarea id="qe-explanation" placeholder="答案解析，将在答题结束后展示..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="closeModal('modal-q-edit')">取消</button>
+                <button class="btn primary" onclick="submitQEditor()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-box"></div>
+
+    <!--═══════════════════════════════════════════════════════════
+        JS 逻辑（登录 / 标签页 / 三大模块 CRUD）
+        ═══════════════════════════════════════════════════════════ -->
+    <script>
+        // ===== 通用工具 =====
+        var CAT_MAP = {
+            'aircraft_types': '民航机型',
+            'aircraft_structure': '飞行器结构',
+            'airworthiness': '航空适航标准',
+            'engine': '航发知识',
+            'regulations': '航空行业法规',
+            'other': '其他'
+        };
+        var CAT_CLASS = { 'fighter': 'fighter', 'airliner': 'airliner', 'transport': 'transport' };
+
+        function esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function toast(msg, ok) {
+            var box = document.getElementById('toast-box');
+            var t = document.createElement('div');
+            t.className = 'toast ' + (ok ? 'ok' : 'err');
+            t.textContent = (ok ? '✓ ' : '✕ ') + msg;
+            box.appendChild(t);
+            setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity 0.4s'; }, 2400);
+            setTimeout(function () { box.removeChild(t); }, 2900);
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        function fmtSize(bytes) {
+            if (!bytes) return '-';
+            if (bytes > 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+            return (bytes / 1024).toFixed(0) + ' KB';
+        }
+
+        // ===== 登录 =====
+        function adminLogin() {
+            var user = document.getElementById('login-user').value.trim();
+            var pass = document.getElementById('login-pass').value.trim();
+            var errBox = document.getElementById('login-error');
+            var btn = document.getElementById('login-btn');
+            if (!user || !pass) { errBox.textContent = '请输入用户名和密码'; return; }
+            btn.disabled = true; btn.textContent = '登录中...';
+            fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    btn.disabled = false; btn.textContent = '登录';
+                    if (res.ok) {
+                        enterAdmin();
+                    } else {
+                        errBox.textContent = res.data.error || '登录失败';
+                    }
+                })
+                .catch(function () {
+                    btn.disabled = false; btn.textContent = '登录';
+                    errBox.textContent = '网络错误，请重试';
+                });
+        }
+
+        function adminLogout() {
+            fetch('/api/admin/logout', { method: 'POST' }).then(function () { location.reload(); });
+        }
+
+        function enterAdmin() {
+            document.getElementById('login-mask').style.display = 'none';
+            document.getElementById('header-actions').style.display = 'flex';
+            loadAll();
+        }
+
+        // Enter 键登录
+        document.getElementById('login-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') adminLogin(); });
+        document.getElementById('login-user').addEventListener('keydown', function (e) { if (e.key === 'Enter') adminLogin(); });
+
+        // ===== 标签页 =====
+        function switchTab(name) {
+            document.querySelectorAll('.admin-tab').forEach(function (t) {
+                t.classList.toggle('active', t.dataset.tab === name);
+            });
+            document.querySelectorAll('.tab-panel').forEach(function (p) {
+                p.classList.toggle('active', p.id === 'panel-' + name);
+            });
+        }
+
+        // ===== 数据加载 =====
+        var modelsData = [];
+        var knowledgeData = null;
+        var questionsData = null;
+
+        function loadAll() {
+            fetch('/api/admin/models').then(function (r) { return r.json(); }).then(function (d) { modelsData = d; renderModels(); });
+            fetch('/api/admin/knowledge').then(function (r) { return r.json(); }).then(function (d) { knowledgeData = d; renderKnowledge(); });
+            fetch('/api/admin/questions').then(function (r) { return r.json(); }).then(function (d) { questionsData = d; renderQuestions(); });
+        }
+
+        // ===== 模型管理 =====
+        function renderModels() {
+            var q = (document.getElementById('models-search').value || '').toLowerCase();
+            var list = modelsData.filter(function (m) {
+                return !q || (m.display_name || '').toLowerCase().indexOf(q) >= 0 ||
+                    (m.filename || '').toLowerCase().indexOf(q) >= 0;
+            });
+            document.getElementById('models-count').innerHTML = '共 <b>' + list.length + '</b> 个模型';
+            var tbody = document.getElementById('models-tbody');
+            if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-tip">暂无模型</td></tr>'; return; }
+            var html = '';
+            list.forEach(function (m) {
+                html += '<tr>' +
+                    '<td class="td-dim">' + m.id + '</td>' +
+                    '<td class="td-title">' + esc(m.display_name) + (m.exists ? '' : ' <span class="file-missing">[文件缺失]</span>') + '</td>' +
+                    '<td class="td-dim" title="' + esc(m.filename) + '">' + esc(m.filename) + '</td>' +
+                    '<td><span class="cat-tag ' + (CAT_CLASS[m.category] || '') + '">' + esc(m.category || '-') + '</span></td>' +
+                    '<td class="td-dim">' + fmtSize(m.file_size) + '</td>' +
+                    '<td class="td-dim">' + esc(m.country || '-') + '</td>' +
+                    '<td><div class="row-actions">' +
+                    '<button class="btn small" onclick="openModelEdit(' + m.id + ')">编辑</button>' +
+                    '<button class="btn small danger" onclick="deleteModel(' + m.id + ',\'' + esc(m.display_name).replace(/'/g, "\\'") + '\')">删除</button>' +
+                    '</div></td></tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        var pickedFile = null;
+
+        function onFilePicked() {
+            var inp = document.getElementById('model-file');
+            pickedFile = inp.files && inp.files[0] ? inp.files[0] : null;
+            var nameBox = document.getElementById('file-drop-name');
+            if (pickedFile) {
+                nameBox.innerHTML = '已选择: <span class="fname">' + esc(pickedFile.name) + '</span> (' + fmtSize(pickedFile.size) + ')';
+                var dn = document.getElementById('mu-display-name');
+                if (!dn.value.trim()) dn.value = pickedFile.name.replace(/\.(glb|gltf)$/i, '');
+            } else {
+                nameBox.textContent = '尚未选择文件';
+            }
+        }
+
+        // 拖拽支持
+        (function () {
+            var drop = document.getElementById('file-drop');
+            ['dragenter', 'dragover'].forEach(function (ev) {
+                drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('dragover'); });
+            });
+            ['dragleave', 'drop'].forEach(function (ev) {
+                drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('dragover'); });
+            });
+            drop.addEventListener('drop', function (e) {
+                if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                    var dt = new DataTransfer();
+                    dt.items.add(e.dataTransfer.files[0]);
+                    document.getElementById('model-file').files = dt.files;
+                    onFilePicked();
+                }
+            });
+        })();
+
+        function openModelUpload() {
+            document.getElementById('modal-model-upload').classList.add('open');
+        }
+
+        function submitModelUpload() {
+            if (!pickedFile) { toast('请先选择模型文件', false); return; }
+            var displayName = document.getElementById('mu-display-name').value.trim();
+            if (!displayName) { toast('显示名称不能为空', false); return; }
+            var meta = {
+                display_name: displayName,
+                category: document.getElementById('mu-category').value,
+                full_name: document.getElementById('mu-full-name').value.trim(),
+                country: document.getElementById('mu-country').value.trim(),
+                service_period: document.getElementById('mu-service-period').value.trim(),
+                scale_ratio: document.getElementById('mu-scale-ratio').value.trim(),
+                usage_desc: document.getElementById('mu-usage-desc').value.trim(),
+                real_wingspan_m: document.getElementById('mu-real-wingspan').value,
+                real_length_m: document.getElementById('mu-real-length').value
+            };
+            var fd = new FormData();
+            fd.append('file', pickedFile);
+            fd.append('meta', JSON.stringify(meta));
+            fetch('/api/admin/models', { method: 'POST', body: fd })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) {
+                        toast('模型上传成功', true);
+                        closeModal('modal-model-upload');
+                        loadAll();
+                    } else { toast(res.data.error || '上传失败', false); }
+                });
+        }
+
+        var editingModelId = null;
+
+        function openModelEdit(id) {
+            var m = modelsData.find(function (x) { return x.id === id; });
+            if (!m) return;
+            editingModelId = id;
+            document.getElementById('me-title').textContent = '· ' + (m.display_name || m.filename);
+            document.getElementById('me-display-name').value = m.display_name || '';
+            document.getElementById('me-category').value = m.category || 'fighter';
+            document.getElementById('me-full-name').value = m.full_name || '';
+            document.getElementById('me-country').value = m.country || '';
+            document.getElementById('me-service-period').value = m.service_period || '';
+            document.getElementById('me-scale-ratio').value = m.scale_ratio || '';
+            document.getElementById('me-usage-desc').value = m.usage_desc || '';
+            document.getElementById('me-real-wingspan').value = m.real_wingspan_m || '';
+            document.getElementById('me-real-length').value = m.real_length_m || '';
+            document.getElementById('me-weight').value = m.weight || '';
+            document.getElementById('me-glide_coe').value = m.glide_coe || '';
+            document.getElementById('me-wind_coe').value = m.wind_coe || '';
+            document.getElementById('me-bounce').value = m.bounce || '';
+            document.getElementById('modal-model-edit').classList.add('open');
+        }
+
+        function submitModelEdit() {
+            var body = {
+                display_name: document.getElementById('me-display-name').value.trim(),
+                category: document.getElementById('me-category').value,
+                full_name: document.getElementById('me-full-name').value.trim(),
+                country: document.getElementById('me-country').value.trim(),
+                service_period: document.getElementById('me-service-period').value.trim(),
+                scale_ratio: document.getElementById('me-scale-ratio').value.trim(),
+                usage_desc: document.getElementById('me-usage-desc').value.trim(),
+                real_wingspan_m: document.getElementById('me-real-wingspan').value,
+                real_length_m: document.getElementById('me-real-length').value,
+                weight: document.getElementById('me-weight').value,
+                glide_coe: document.getElementById('me-glide_coe').value,
+                wind_coe: document.getElementById('me-wind_coe').value,
+                bounce: document.getElementById('me-bounce').value
+            };
+            fetch('/api/admin/models/' + editingModelId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) { toast('模型信息已更新', true); closeModal('modal-model-edit'); loadAll(); }
+                    else { toast(res.data.error || '更新失败', false); }
+                });
+        }
+
+        function deleteModel(id, name) {
+            if (!confirm('确定删除模型「' + name + '」？\n将同时删除数据库记录和模型文件，不可恢复。')) return;
+            fetch('/api/admin/models/' + id, { method: 'DELETE' })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) { toast('模型已删除', true); loadAll(); }
+                    else { toast(res.data.error || '删除失败', false); }
+                });
+        }
+
+        // ===== 资料库管理 =====
+        function renderKnowledge() {
+            if (!knowledgeData) return;
+            var q = (document.getElementById('kb-search').value || '').toLowerCase();
+            var items = (knowledgeData.knowledge_items || []).filter(function (it) {
+                return !q || (it.title || '').toLowerCase().indexOf(q) >= 0 ||
+                    (it.content || '').toLowerCase().indexOf(q) >= 0;
+            });
+            document.getElementById('kb-count').innerHTML = '共 <b>' + items.length + '</b> 条知识';
+            var tbody = document.getElementById('kb-tbody');
+            if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-tip">暂无知识条目</td></tr>'; return; }
+            var html = '';
+            items.forEach(function (it) {
+                var catName = CAT_MAP[it.category] || it.category || '其他';
+                var preview = (it.content || '').length > 80 ? it.content.substring(0, 80) + '...' : (it.content || '');
+                html += '<tr>' +
+                    '<td class="td-dim">' + esc(it.id) + '</td>' +
+                    '<td><span class="cat-tag">' + esc(catName) + '</span></td>' +
+                    '<td class="td-title">' + esc(it.title) + '</td>' +
+                    '<td class="td-preview" title="' + esc(it.content) + '">' + esc(preview) + '</td>' +
+                    '<td><div class="row-actions">' +
+                    '<button class="btn small" onclick="openKBEditor(\'' + it.id + '\')">编辑</button>' +
+                    '<button class="btn small danger" onclick="deleteKB(\'' + it.id + '\',\'' + esc(it.title).replace(/'/g, "\\'") + '\')">删除</button>' +
+                    '</div></td></tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        var editingKBId = null;
+
+        function openKBEditor(itemId) {
+            editingKBId = itemId;
+            // 填充分类下拉
+            var catSel = document.getElementById('ke-category');
+            catSel.innerHTML = '';
+            (knowledgeData.categories || []).forEach(function (c) {
+                var opt = document.createElement('option');
+                opt.value = c.id; opt.textContent = c.name;
+                catSel.appendChild(opt);
+            });
+            var opt = document.createElement('option');
+            opt.value = 'other'; opt.textContent = '其他';
+            catSel.appendChild(opt);
+
+            if (itemId) {
+                var it = knowledgeData.knowledge_items.find(function (x) { return x.id === itemId; });
+                if (!it) return;
+                document.getElementById('kb-modal-title').textContent = '编辑知识条目 · ' + itemId;
+                catSel.value = it.category || 'other';
+                document.getElementById('ke-title').value = it.title || '';
+                document.getElementById('ke-content').value = it.content || '';
+                document.getElementById('ke-source').value = it.source || '';
+                document.getElementById('ke-keywords').value = (it.keywords || []).join(', ');
+            } else {
+                document.getElementById('kb-modal-title').textContent = '新增知识条目';
+                catSel.value = 'aircraft_types';
+                document.getElementById('ke-title').value = '';
+                document.getElementById('ke-content').value = '';
+                document.getElementById('ke-source').value = '';
+                document.getElementById('ke-keywords').value = '';
+            }
+            document.getElementById('modal-kb-edit').classList.add('open');
+        }
+
+        function submitKBEditor() {
+            var keywords = document.getElementById('ke-keywords').value
+                .split(/[,，]/).map(function (s) { return s.trim(); }).filter(Boolean);
+            var body = {
+                category: document.getElementById('ke-category').value,
+                title: document.getElementById('ke-title').value.trim(),
+                content: document.getElementById('ke-content').value.trim(),
+                source: document.getElementById('ke-source').value.trim(),
+                keywords: keywords
+            };
+            if (!body.title || !body.content) { toast('标题和内容不能为空', false); return; }
+            var url = editingKBId ? '/api/admin/knowledge/' + editingKBId : '/api/admin/knowledge';
+            var method = editingKBId ? 'PUT' : 'POST';
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) { toast(editingKBId ? '条目已更新' : '条目已新增', true); closeModal('modal-kb-edit'); loadAll(); }
+                    else { toast(res.data.error || '保存失败', false); }
+                });
+        }
+
+        function deleteKB(id, title) {
+            if (!confirm('确定删除知识条目「' + title + '」？\n关联该条目的题目也会一并删除。')) return;
+            fetch('/api/admin/knowledge/' + id, { method: 'DELETE' })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) { toast('条目已删除', true); loadAll(); }
+                    else { toast(res.data.error || '删除失败', false); }
+                });
+        }
+
+        // ===== 题库管理 =====
+        function renderQuestions() {
+            if (!questionsData) return;
+            var q = (document.getElementById('q-search').value || '').toLowerCase();
+            var items = (questionsData.questions || []).filter(function (it) {
+                if (!q) return true;
+                var opts = (it.options || []).join(' ').toLowerCase();
+                return (it.question || '').toLowerCase().indexOf(q) >= 0 || opts.indexOf(q) >= 0;
+            });
+            document.getElementById('q-count').innerHTML = '共 <b>' + items.length + '</b> 道题';
+            var tbody = document.getElementById('q-tbody');
+            if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-tip">暂无题目</td></tr>'; return; }
+            var html = '';
+            items.forEach(function (it) {
+                var catName = CAT_MAP[it.category] || it.category || '其他';
+                var ans = (it.options || [])[it.answer] || '-';
+                var letters = ['A', 'B', 'C', 'D'];
+                html += '<tr>' +
+                    '<td class="td-dim">' + esc(it.id) + '</td>' +
+                    '<td><span class="cat-tag">' + esc(catName) + '</span></td>' +
+                    '<td class="td-preview" title="' + esc(it.question) + '">' + esc(it.question) + '</td>' +
+                    '<td><span style="color:var(--aviation-success);font-weight:600;">' + letters[it.answer] + '. </span>' + esc(ans) + '</td>' +
+                    '<td><div class="row-actions">' +
+                    '<button class="btn small" onclick="openQEditor(\'' + it.id + '\')">编辑</button>' +
+                    '<button class="btn small danger" onclick="deleteQ(\'' + it.id + '\')">删除</button>' +
+                    '</div></td></tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        var editingQId = null;
+
+        function openQEditor(qid) {
+            editingQId = qid;
+            // 填充分类下拉
+            var catSel = document.getElementById('qe-category');
+            catSel.innerHTML = '';
+            Object.keys(CAT_MAP).forEach(function (cid) {
+                var opt = document.createElement('option');
+                opt.value = cid; opt.textContent = CAT_MAP[cid];
+                catSel.appendChild(opt);
+            });
+            // 填充知识点下拉
+            var kbSel = document.getElementById('qe-kb-id');
+            kbSel.innerHTML = '<option value="">（不关联）</option>';
+            (knowledgeData && knowledgeData.knowledge_items || []).forEach(function (it) {
+                var opt = document.createElement('option');
+                opt.value = it.id; opt.textContent = it.id + ' · ' + it.title;
+                kbSel.appendChild(opt);
+            });
+
+            if (qid) {
+                var it = questionsData.questions.find(function (x) { return x.id === qid; });
+                if (!it) return;
+                document.getElementById('q-modal-title').textContent = '编辑题目 · ' + qid;
+                catSel.value = it.category || 'aircraft_types';
+                kbSel.value = it.kb_id || '';
+                document.getElementById('qe-question').value = it.question || '';
+                for (var i = 0; i < 4; i++) {
+                    document.getElementById('qe-opt-' + i).value = (it.options || [])[i] || '';
+                }
+                var radios = document.querySelectorAll('input[name="qe-answer"]');
+                radios.forEach(function (r, idx) { r.checked = (idx === it.answer); });
+                document.getElementById('qe-explanation').value = it.explanation || '';
+            } else {
+                document.getElementById('q-modal-title').textContent = '新增题目';
+                catSel.value = 'aircraft_types';
+                kbSel.value = '';
+                document.getElementById('qe-question').value = '';
+                for (var j = 0; j < 4; j++) document.getElementById('qe-opt-' + j).value = '';
+                document.querySelector('input[name="qe-answer"][value="0"]').checked = true;
+                document.getElementById('qe-explanation').value = '';
+            }
+            // 同步正确答案高亮
+            document.querySelectorAll('input[name="qe-answer"]').forEach(function (r) {
+                r.addEventListener('change', syncAnswerHighlight);
+            });
+            syncAnswerHighlight();
+            document.getElementById('modal-q-edit').classList.add('open');
+        }
+
+        function syncAnswerHighlight() {
+            var checked = document.querySelector('input[name="qe-answer"]:checked');
+            var val = checked ? parseInt(checked.value) : 0;
+            for (var i = 0; i < 4; i++) {
+                document.getElementById('qe-opt-' + i).classList.toggle('is-answer', i === val);
+            }
+        }
+
+        function submitQEditor() {
+            var options = [];
+            for (var i = 0; i < 4; i++) options.push(document.getElementById('qe-opt-' + i).value.trim());
+            var checked = document.querySelector('input[name="qe-answer"]:checked');
+            var answer = checked ? parseInt(checked.value) : -1;
+            var body = {
+                category: document.getElementById('qe-category').value,
+                kb_id: document.getElementById('qe-kb-id').value,
+                question: document.getElementById('qe-question').value.trim(),
+                options: options,
+                answer: answer,
+                explanation: document.getElementById('qe-explanation').value.trim()
+            };
+            if (!body.question) { toast('题干不能为空', false); return; }
+            if (options.some(function (o) { return !o; })) { toast('4 个选项均不能为空', false); return; }
+            if (answer < 0) { toast('请勾选正确答案', false); return; }
+            var url = editingQId ? '/api/admin/questions/' + editingQId : '/api/admin/questions';
+            var method = editingQId ? 'PUT' : 'POST';
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) { toast(editingQId ? '题目已更新' : '题目已新增', true); closeModal('modal-q-edit'); loadAll(); }
+                    else { toast(res.data.error || '保存失败', false); }
+                });
+        }
+
+        function deleteQ(qid) {
+            if (!confirm('确定删除题目 ' + qid + '？')) return;
+            fetch('/api/admin/questions/' + qid, { method: 'DELETE' })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) { toast('题目已删除', true); loadAll(); }
+                    else { toast(res.data.error || '删除失败', false); }
+                });
+        }
+
+        // ===== 启动：查询登录状态 =====
+        fetch('/api/admin/status').then(function (r) { return r.json(); }).then(function (d) {
+            if (d.logged_in) enterAdmin();
+        });
+    </script>
+</body>
+
+</html>

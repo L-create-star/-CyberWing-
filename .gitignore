@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 运行时数据库（含用户数据，不入库）
+*.db
+models.db
+
+# 临时与中间产物
+.temp/
+.temp_scene_tex/
+wrong_exports/
+
+# 大型三维场景（超过 GitHub 100MB 单文件限制，本地/桌面版分发）
+static/scenes/
+
+# 源建模素材目录（Blender 原始工程与贴图，体积大不入库）
+模型/
+贴图/
+楼房模型/
+地板块/
+
+# 手机版独立仓库（由 L-create-star/CyberWing 单独管理）
+APK_APP/
+
+# 文档与杂项
+赛博航空项目计划书.docx
